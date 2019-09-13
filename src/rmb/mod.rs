@@ -7,7 +7,6 @@ pub trait Msg: fmt::Display {
 }
 
 pub trait Transport {
-    // Instance method signatures; these will return a string.
     fn name(&self) -> &'static str;
 
     fn register(&self) -> Result<String, String>;
@@ -28,7 +27,7 @@ impl<'a> Rmb<'a> {
         self.inited = true;
         Ok("Success".to_string()) 
     }
-    
+
     pub fn get_transport_name(&self) -> Result<String, String> {
         if self.inited {
             Ok(self.transport.name().to_string())
@@ -66,8 +65,25 @@ impl<'a> Rmb<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::local::*;
+    use crate::rmb::*;
+    //
+    // Test to see that we are registered before we call the transport subscribe
+    //
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn test_subscribe_registered() {
+        let t = TransportLocal::new();
+        let mut r = Rmb::new(&t);
+        r.init().unwrap();
+        r.register().unwrap();
+        r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
+    }
+   #[test]
+   #[should_panic(expected = "Not Registered")]
+    fn test_subscribe_unregistered() {
+        let t = TransportLocal::new();
+        let mut r = Rmb::new(&t);
+        r.init().unwrap();
+        r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
     }
 }

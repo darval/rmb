@@ -37,8 +37,15 @@ impl<'a> super::rmb::Transport for TransportLocal   {
 }
 #[cfg(test)]
 mod tests {
+    use crate::rmb::Transport;
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn test_init() {
+        let t = super::TransportLocal::new();
+        t.init().unwrap();
+    }
+    #[test]
+    fn get_name() {
+        let t = super::TransportLocal::new();
+        assert_eq!(t.name(), "local");
     }
 }

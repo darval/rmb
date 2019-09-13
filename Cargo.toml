@@ -1,5 +1,5 @@
 [package]
-name = "rmb"
+name = "rustmsgbus"
 version = "0.1.2-alpha.0"
 authors = ["Rick Duff <rgduff@gmail.com>"]
 edition = "2018"

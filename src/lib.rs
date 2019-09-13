@@ -1,19 +1,13 @@
-mod rmb;
-
-pub fn init(attr: rmb::Attribute) -> Result<rmb::Rmb,String> {
-    let r = rmb::Rmb::new(attr);
-    Ok(r)
-}
+pub mod rmb;
+pub mod local;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_init() {
-        let r = init(rmb::Attribute::Local).unwrap();
-        match r.attr() {
-            rmb::Attribute::Local => (),
-            _ => panic!("Attribute is wrong"),
-        }
+        let t = local::TransportLocal::new();
+        let mut r = rmb::Rmb::new(&t);
+        r.init().unwrap();
     }
 }

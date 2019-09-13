@@ -28,6 +28,15 @@ impl<'a> Rmb<'a> {
         self.inited = true;
         Ok("Success".to_string()) 
     }
+    
+    pub fn get_transport_name(&self) -> Result<String, String> {
+        if self.inited {
+            Ok(self.transport.name().to_string())
+        } else {
+            Err("Not Inited".to_string())
+        }
+    }
+
     pub fn register(&mut self) -> Result<String, String> {
         if self.inited {
             self.transport.register()?;

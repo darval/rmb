@@ -1,5 +1,6 @@
 pub mod rmb;
 pub mod local;
+pub mod internal;
 
 #[cfg(test)]
 mod tests {

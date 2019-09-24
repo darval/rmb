@@ -10,6 +10,10 @@ environment:
     MSYS2: 1
   - TARGET: i686-pc-windows-msvc
     BITS: 32
+  - TARGET: i686-apple-darwin
+    BITS: 32
+  - TARGET: x86_64-apple-darwin
+    BITS: 64
 install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET%

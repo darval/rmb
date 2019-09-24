@@ -19,7 +19,7 @@ license = "MIT"
 # `gitlab`; `id` is optional; you can specify the appveyor project id if you
 # want to use that instead. `project_name` is optional; use when the repository
 # name differs from the appveyor project name.
-appveyor = { repository = "https://github.com/darval/rmb", branch = "development", service = "github" }
+appveyor = { repository = "darval/rmb", branch = "development", service = "github" }
 
 # Maintenance: `status` is required. Available options are:
 # - `actively-developed`: New features are being added and bugs are being fixed.

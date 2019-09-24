@@ -1,3 +1,5 @@
+//! Work in Progress - not usable yet!
+//! 
 //! # msgbus
 //! `msgbus` provides the ability to publish messages on a channel (or bus) and subscribe to channels to recieve all the messages 
 //! published on that channel.  To support scalability, when you first register to be able to publish on that channel, you indicate what 

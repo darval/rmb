@@ -1,15 +1,15 @@
 environment:
   matrix:
-  - TARGET: x86_64-pc-windows-gnu
-    BITS: 64
-    MSYS2: 1
-  - TARGET: x86_64-pc-windows-msvc
-    BITS: 64
-  - TARGET: i686-pc-windows-gnu
-    BITS: 32
-    MSYS2: 1
-  - TARGET: i686-pc-windows-msvc
-    BITS: 32
+  # - TARGET: x86_64-pc-windows-gnu
+  #   BITS: 64
+  #   MSYS2: 1
+  # - TARGET: x86_64-pc-windows-msvc
+  #   BITS: 64
+  # - TARGET: i686-pc-windows-gnu
+  #   BITS: 32
+  #   MSYS2: 1
+  # - TARGET: i686-pc-windows-msvc
+  #   BITS: 32
   - TARGET: i686-apple-darwin
     BITS: 32
   - TARGET: x86_64-apple-darwin
@@ -19,6 +19,7 @@ install:
   - rustup-init.exe -y --default-host %TARGET%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - if defined MSYS2 set PATH=C:\msys64\mingw%BITS%\bin;%PATH%
+  - rustup component add rustc --toolchain %TARGET%
   - rustc -V
   - cargo -V
 build: false

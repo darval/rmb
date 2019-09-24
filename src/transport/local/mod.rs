@@ -1,4 +1,5 @@
-use super::rmb;
+use crate::rmb;
+use crate::transport;
 
 pub struct TransportLocal {
     name: &'static str,
@@ -17,7 +18,7 @@ impl TransportLocal {
 
 }
 
-impl<'a> super::rmb::Transport for TransportLocal   {
+impl<'a> transport::Transport for TransportLocal   {
     fn name(&self) -> &'static str {
         &self.name
     }
@@ -37,15 +38,11 @@ impl<'a> super::rmb::Transport for TransportLocal   {
 }
 #[cfg(test)]
 mod tests {
-    use crate::rmb::Transport;
+    use crate::transport::local;
+
     #[test]
     fn test_init() {
-        let t = super::TransportLocal::new();
+        let t = local::TransportLocal::new();
         t.init().unwrap();
-    }
-    #[test]
-    fn get_name() {
-        let t = super::TransportLocal::new();
-        assert_eq!(t.name(), "local");
     }
 }

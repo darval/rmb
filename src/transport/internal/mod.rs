@@ -1,4 +1,5 @@
-use super::rmb;
+use crate::rmb;
+use crate::transport;
 
 pub struct TransportInternal {
     name: &'static str,
@@ -17,7 +18,7 @@ impl TransportInternal {
 
 }
 
-impl<'a> super::rmb::Transport for TransportInternal   {
+impl<'a> transport::Transport for TransportInternal   {
     fn name(&self) -> &'static str {
         &self.name
     }
@@ -37,15 +38,10 @@ impl<'a> super::rmb::Transport for TransportInternal   {
 }
 #[cfg(test)]
 mod tests {
-    use crate::rmb::Transport;
+    use crate::transport::internal;
     #[test]
     fn test_init() {
-        let t = super::TransportInternal::new();
+        let t = internal::TransportInternal::new();
         t.init().unwrap();
-    }
-    #[test]
-    fn get_name() {
-        let t = super::TransportInternal::new();
-        assert_eq!(t.name(), "internal");
     }
 }

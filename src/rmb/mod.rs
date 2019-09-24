@@ -1,28 +1,21 @@
 use std::fmt;
 
+use super::transport;
+
 pub type Channel = u32;
 
 pub trait Msg: fmt::Display {
 
 }
 
-pub trait Transport {
-    fn name(&self) -> &'static str;
-
-    fn register(&self) -> Result<String, String>;
-    fn publish(&self, ch: Channel, msg: &dyn Msg) -> Result<String, String>;
-    fn subscribe(&self, ch: Channel, f: fn(Channel, &dyn Msg)-> Result<String, String>) -> Result<String, String>;
-}
-
-
 pub struct Rmb<'a> {
-    transport: &'a (dyn Transport + 'a),
+    transport: &'a (dyn transport::Transport + 'a),
     inited: bool,
     registered: bool,
 }
 
 impl<'a> Rmb<'a> {
-    pub fn new(transport: &dyn Transport) -> Rmb {  Rmb { transport, inited: false, registered: false }    }
+    pub fn new(transport: &dyn transport::Transport) -> Rmb {  Rmb { transport, inited: false, registered: false }    }
     pub fn init(&mut self) -> Result<String, String> { 
         self.inited = true;
         Ok("Success".to_string()) 
@@ -65,14 +58,14 @@ impl<'a> Rmb<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::local::*;
+    use crate::transport::*;
     use crate::rmb::*;
     //
     // Test to see that we are registered before we call the transport subscribe
     //
     #[test]
     fn test_subscribe_registered() {
-        let t = TransportLocal::new();
+        let t = local::TransportLocal::new();
         let mut r = Rmb::new(&t);
         r.init().unwrap();
         r.register().unwrap();
@@ -81,7 +74,7 @@ mod tests {
    #[test]
    #[should_panic(expected = "Not Registered")]
     fn test_subscribe_unregistered() {
-        let t = TransportLocal::new();
+        let t = local::TransportLocal::new();
         let mut r = Rmb::new(&t);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();

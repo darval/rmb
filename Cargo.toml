@@ -20,6 +20,7 @@ license = "MIT"
 # want to use that instead. `project_name` is optional; use when the repository
 # name differs from the appveyor project name.
 appveyor = { repository = "darval/rmb", branch = "development", service = "github" }
+travis-ci = { repository = "darval/rmb", branch = "development" }
 
 # Maintenance: `status` is required. Available options are:
 # - `actively-developed`: New features are being added and bugs are being fixed.

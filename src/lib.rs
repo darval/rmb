@@ -22,6 +22,7 @@
 //! across mulitple processes, or multiple processors, the clients require almost no refactoring as they are independent from the transport.
 //! 
 pub mod rmb;
+pub mod msgmgr;
 pub mod transport;
 
 #[cfg(test)]

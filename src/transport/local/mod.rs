@@ -1,26 +1,31 @@
 use crate::rmb;
-use crate::transport;
+use crate::transport::{Transport,Bandwidth};
 
 pub struct TransportLocal {
     name: &'static str,
+    bw: Bandwidth,
 }
 
 impl TransportLocal {
     pub fn new() -> TransportLocal {
         TransportLocal {
-            name: "local"
+            name: "local",
+            bw: Bandwidth::Medium
         }
     }
 
     pub fn init(&self) -> Result<String, String> {
-        Ok("Sucess".to_string())
+        Ok("Success".to_string())
     }
 
 }
 
-impl<'a> transport::Transport for TransportLocal   {
+impl<'a> Transport for TransportLocal   {
     fn name(&self) -> &'static str {
         &self.name
+    }
+    fn bandwidth(&self) -> &Bandwidth {
+        &self.bw
     }
 
     fn register(&self) -> Result<String, String> {

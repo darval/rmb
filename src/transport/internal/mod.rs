@@ -1,14 +1,16 @@
 use crate::rmb;
-use crate::transport;
+use crate::transport::{Transport,Bandwidth};
 
 pub struct TransportInternal {
     name: &'static str,
+    bw: Bandwidth,
 }
 
 impl TransportInternal {
     pub fn new() -> TransportInternal {
         TransportInternal {
-            name: "internal"
+            name: "internal",
+            bw: Bandwidth::High,
         }
     }
 
@@ -18,11 +20,13 @@ impl TransportInternal {
 
 }
 
-impl<'a> transport::Transport for TransportInternal   {
+impl<'a> Transport for TransportInternal   {
     fn name(&self) -> &'static str {
         &self.name
     }
-
+    fn bandwidth(&self) -> &Bandwidth {
+        &self.bw
+    }
     fn register(&self) -> Result<String, String> {
         Ok("Success".to_string())
     }

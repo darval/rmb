@@ -37,4 +37,4 @@ travis-ci = { repository = "darval/rmb", branch = "development" }
 #   the crate that the author does not want to fix).
 # - `none`: Displays no badge on crates.io, since the maintainer has not chosen to specify
 #   their intentions, potential crate users will need to investigate on their own.
-maintenance = { status = "actively-developed" }
+maintenance = { status = "experimental" }

@@ -9,7 +9,6 @@ pub trait Msg: fmt::Display {
 }
 
 pub struct Rmb<'a> {
-//    transport: &'a (dyn transport::Transport + 'a),
     msgmgr: &'a mut msgmgr::MsgMgr<'a>,
     inited: bool,
 }
@@ -30,7 +29,7 @@ impl<'a> Rmb<'a> {
         }
     }
 
-    pub fn publish(&mut self, ch: Channel, msg: &dyn Msg) -> Result<String, String> {
+    pub fn publish(&mut self, ch: Channel, msg: &'a dyn Msg) -> Result<String, String> {
         if self.inited {
             self.msgmgr.publish(ch, msg)
         } else {

@@ -24,7 +24,7 @@
 //! across mulitple processes, or multiple processors, the clients require almost no refactoring as they are independent from the transport.
 //! 
 //! # Publishing
-//! Publishing is a non block call to the `msgbus` designated by the `rmb::Channel`.  This is a simple `u32` which you define the means for your specific 
+//! Publishing is a non-blocking call to the `msgbus` designated by the `rmb::Channel`.  This is a simple `u32` which you define the means for your specific 
 //! application. What you send is a structure with the trait of `rmb::Msg`.  The msg will be put on the channel, whether there is any subscribers or not.
 //! 
 //! # Subscribing

@@ -20,7 +20,7 @@ impl<'a> MsgMgr<'a> {
             Err("Not Inited".to_string())
         }
     }
-    pub fn publish(&mut self, ch: rmb::Channel, msg: &dyn rmb::Msg) -> Result<String, String> {
+    pub fn publish(&mut self, ch: rmb::Channel, msg: &'a dyn rmb::Msg) -> Result<String, String> {
         if self.inited {
             self.transport.publish(ch, msg)
         } else {

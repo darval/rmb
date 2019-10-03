@@ -35,11 +35,33 @@
 //! 
 //! ```
 //! use msgbus::{msgmgr,rmb,transport::internal};
-//!
+//! use std::fmt;
+//! 
 //! fn main() {
+//!     struct MyMsg {
+//!         s: String,
+//!     }
+//!     impl rmb::Msg for MyMsg {
+//!
+//!     }
+//!     impl fmt::Display for MyMsg {
+//!         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//!             write!(f, "{}", self.s)
+//!         }
+//!     }
+//!     fn handler(_chan: rmb::Channel, msg: &dyn rmb::Msg)-> Result<String, String> {
+//!         println!("{}", msg); 
+//!         Ok(msg.to_string())
+//!     }
+//!
 //!     let t = internal::TransportInternal::new();
-//!     let mut mb = msgmgr::MsgMgr::new(&t);
-//!     let mut r = rmb::Rmb::new(&mut mb);
+//!     let mut mm = msgmgr::MsgMgr::new(&t);
+//!     let mut mb = rmb::Rmb::new(&mut mm);
+//!     mb.init().unwrap();
+//!     let hello = MyMsg { s: "Hello".to_string() };
+//!     let chan = 1;
+//!     mb.subscribe(chan, handler).unwrap();
+//!     mb.publish(chan, &hello).unwrap();
 //! 
 //! }
 pub mod rmb;

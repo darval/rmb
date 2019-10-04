@@ -10,7 +10,7 @@
 //! 
 //! # Theory of Operation
 //! A message bus is a general communication mechanism which has a many-to-many relationship between publishers (many clients can publish on a given bus)
-//! and subscribers (many clients can subscribe to a given bus). In an implementaiton where we can have many buses, we can have dedicated buses for one-to-one,
+//! and subscribers (many clients can subscribe to a given bus). In an implementation where we can have many buses, we can have dedicated buses for one-to-one,
 //! one-to-many and many-to-one relationships as needed.
 //! 
 //! In this particular implementation, we can have many buses, called `Channels`, and a further enhancement has been added to support scalability.  In the

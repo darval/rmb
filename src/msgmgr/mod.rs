@@ -33,7 +33,7 @@ impl<'a> MsgMgr<'a> {
         // if self.inited {
             // self.transport.publish(ch, msg)
         // } else {
-            Err("Not Inited".to_string())
+            Ok("Not Implemented".to_string())
         // }
     }
 
@@ -42,7 +42,7 @@ impl<'a> MsgMgr<'a> {
         // if self.inited {
             // self.transport.subscribe(ch, f)
         // } else {
-            Err("Not Inited".to_string())
+            Ok("Not Implemented".to_string())
         // }
     }
 

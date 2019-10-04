@@ -4,7 +4,7 @@ use super::rmb;
 pub struct MsgMgr<'a> {
     transport: &'a (dyn transport::Transport + 'a),
     inited: bool,
-
+    transports: Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>,
 }
 
 impl<'a> MsgMgr<'a> {

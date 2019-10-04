@@ -21,9 +21,9 @@ impl<'a> Rmb<'a> {
         Ok("Success".to_string()) 
     }
 
-    pub fn get_transport_name(&self) -> Result<String, String> {
+    pub fn get_transport_names(&self) -> Result<Vec<String>, String> {
         if self.inited {
-            Ok(self.msgmgr.get_transport_name().unwrap())
+            Ok(self.msgmgr.get_transport_names().unwrap())
         } else {
             Err("Not Inited".to_string())
         }
@@ -58,7 +58,7 @@ mod tests {
     #[ignore]
     fn test_subscribe_registered() {
         let t = local::TransportLocal::new();
-        let mut mb = msgmgr::MsgMgr::new(&t);
+        let mut mb = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
         let mut r = Rmb::new(&mut mb);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
@@ -68,7 +68,7 @@ mod tests {
    #[should_panic(expected = "Not Registered")]
     fn test_subscribe_unregistered() {
         let t = local::TransportLocal::new();
-        let mut mb = msgmgr::MsgMgr::new(&t);
+        let mut mb = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
         let mut r = Rmb::new(&mut mb);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();

@@ -25,7 +25,7 @@
 //! 
 //! # Publishing
 //! Publishing is a non-blocking call to the `msgbus` designated by the `rmb::Bus`.  This is a simple `u32` which you define the means for your specific 
-//! application. What you send is a structure with the trait of `rmb::Msg`.  The msg will be put on the channel, whether there is any subscribers or not.
+//! application. What you send is a structure with the trait of `rmb::Msg`.  The msg will be put on the bus, whether there is any subscribers or not.
 //! 
 //! # Subscribing
 //! When you subscribe to the a particular bus, your handler will be called for all msgs received from that point forward.  The handler may be a function

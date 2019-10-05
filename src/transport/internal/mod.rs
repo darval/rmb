@@ -27,10 +27,10 @@ impl<'a> Transport for TransportInternal   {
     fn bandwidth(&self) -> &Bandwidth {
         &self.bw
     }
-    fn register(&self, _channels: &std::ops::Range<rmb::Channel>, _handler: fn(rmb::Channel, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String> {
+    fn register(&self, _buses: &std::ops::Range<rmb::Bus>, _handler: fn(rmb::Bus, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String> {
         Ok("Success".to_string())
     }
-    fn publish(&self, _ch: rmb::Channel, _msg: &dyn rmb::Msg) -> Result<String, String> {
+    fn publish(&self, _bus: rmb::Bus, _msg: &dyn rmb::Msg) -> Result<String, String> {
         Ok("Success".to_string())
     }
 

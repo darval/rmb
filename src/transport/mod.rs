@@ -13,8 +13,8 @@ pub enum Bandwidth {
 pub trait Transport {
     fn name(&self) -> &'static str;
     fn bandwidth(&self) -> &Bandwidth;
-    fn register(&self, channels: &std::ops::Range<rmb::Channel>, handler: fn(rmb::Channel, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String>;
-    fn publish(&self, ch: rmb::Channel, msg: &dyn rmb::Msg) -> Result<String, String>;
+    fn register(&self, buses: &std::ops::Range<rmb::Bus>, handler: fn(rmb::Bus, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String>;
+    fn publish(&self, ch: rmb::Bus, msg: &dyn rmb::Msg) -> Result<String, String>;
 }
 
 #[cfg(test)]

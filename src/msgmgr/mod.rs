@@ -7,7 +7,7 @@ pub struct MsgMgr<'a> {
 }
 
 impl<'a> MsgMgr<'a> {
-    pub fn new(transports: Vec<(std::ops::Range<rmb::Channel>,&'a (dyn transport::Transport + 'a))>) -> MsgMgr {  MsgMgr { transports, inited: false } }
+    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,&'a (dyn transport::Transport + 'a))>) -> MsgMgr {  MsgMgr { transports, inited: false } }
     pub fn init(&mut self) -> Result<String, String> { 
         if self.transports.is_empty() {
             return Err("MsgMgr has no transports defined".to_string());
@@ -29,7 +29,7 @@ impl<'a> MsgMgr<'a> {
         }
         Ok(v)
     }
-    pub fn publish(&mut self, _ch: rmb::Channel, _msg: &'a dyn rmb::Msg) -> Result<String, String> {
+    pub fn publish(&mut self, _bus: rmb::Bus, _msg: &'a dyn rmb::Msg) -> Result<String, String> {
         // if self.inited {
             // self.transport.publish(ch, msg)
         // } else {
@@ -38,7 +38,7 @@ impl<'a> MsgMgr<'a> {
     }
 
 
-    pub fn subscribe(&mut self, _ch: rmb::Channel, _f: fn(rmb::Channel, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String> {
+    pub fn subscribe(&mut self, _bus: rmb::Bus, _f: fn(rmb::Bus, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String> {
         // if self.inited {
             // self.transport.subscribe(ch, f)
         // } else {
@@ -47,7 +47,7 @@ impl<'a> MsgMgr<'a> {
     }
 
 }
-fn handle_msg(_ch: rmb::Channel, _msg: &dyn rmb::Msg) -> Result<String, String> {
+fn handle_msg(_bus: rmb::Bus, _msg: &dyn rmb::Msg) -> Result<String, String> {
     Ok("".to_string())
 }
 

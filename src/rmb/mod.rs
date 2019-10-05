@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::msgmgr;
 
-pub type Channel = u32;
+pub type Bus = u32;
 
 pub trait Msg: fmt::Display {
 
@@ -29,17 +29,17 @@ impl<'a> Rmb<'a> {
         }
     }
 
-    pub fn publish(&mut self, ch: Channel, msg: &'a dyn Msg) -> Result<String, String> {
+    pub fn publish(&mut self, bus: Bus, msg: &'a dyn Msg) -> Result<String, String> {
         if self.inited {
-            self.msgmgr.publish(ch, msg)
+            self.msgmgr.publish(bus, msg)
         } else {
             Err("Not Inited".to_string())
         }
     }
 
-    pub fn subscribe(&mut self, ch: Channel, f: fn(Channel, &dyn Msg)-> Result<String, String>) -> Result<String, String> {
+    pub fn subscribe(&mut self, bus: Bus, f: fn(Bus, &dyn Msg)-> Result<String, String>) -> Result<String, String> {
         if self.inited {
-            self.msgmgr.subscribe(ch, f)
+            self.msgmgr.subscribe(bus, f)
         } else {
             Err("Not Inited".to_string())
         }

@@ -1,20 +1,19 @@
-use std::fmt;
-
+use std::fmt::Display;
 use super::msgmgr;
 
 pub type Bus = u32;
 
-pub trait Msg: fmt::Display {
+pub trait Msg: Send + Sync + Display {
 
 }
 
 pub struct Rmb<'a> {
-    msgmgr: &'a mut msgmgr::MsgMgr<'a>,
+    msgmgr: msgmgr::MsgMgr<'a>,
     inited: bool,
 }
 
 impl<'a> Rmb<'a> {
-    pub fn new(msgmgr: &'a mut msgmgr::MsgMgr<'a>) -> Rmb<'a> {  Rmb { msgmgr, inited: false }    }
+    pub fn new(msgmgr: msgmgr::MsgMgr) -> Rmb {  Rmb { msgmgr, inited: false }    }
     pub fn init(&mut self) -> Result<String, String> {
         self.msgmgr.init().unwrap();
         self.inited = true;
@@ -58,8 +57,8 @@ mod tests {
     #[ignore]
     fn test_subscribe_registered() {
         let t = local::TransportLocal::new();
-        let mut mb = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = Rmb::new(&mut mb);
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
+        let mut r = Rmb::new(mm);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
     }
@@ -68,8 +67,8 @@ mod tests {
    #[should_panic(expected = "Not Registered")]
     fn test_subscribe_unregistered() {
         let t = local::TransportLocal::new();
-        let mut mb = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = Rmb::new(&mut mb);
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
+        let mut r = Rmb::new(mm);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
     }

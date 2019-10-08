@@ -10,7 +10,7 @@ pub enum Bandwidth {
     High,
 }
 
-pub trait Transport {
+pub trait Transport: Send + Sync {
     fn name(&self) -> &'static str;
     fn bandwidth(&self) -> &Bandwidth;
     fn register(&self, buses: &std::ops::Range<rmb::Bus>, handler: fn(rmb::Bus, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String>;

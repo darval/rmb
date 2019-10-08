@@ -12,7 +12,7 @@ license = "MIT"
 
 [dependencies]
 serde = "1.0.101"
-
+crossbeam = "0.7.2"
 [badges]
 
 # Appveyor: `repository` is required. `branch` is optional; default is `master`

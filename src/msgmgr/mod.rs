@@ -1,30 +1,60 @@
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::{mpsc, Mutex};
+use std::thread;
 use super::transport;
 use super::rmb;
 
 pub struct MsgMgr<'a> {
     inited: bool,
-    transports: Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>,
+    transports: Mutex<Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>>,
+    self_tx: Sender<Box<dyn rmb::Msg+'a>>,
+    thread_tx: Sender<Box<dyn rmb::Msg+'a>>,
+    self_rx: Receiver<Box<dyn rmb::Msg+'a>>,
+    thread_rx: Receiver<Box<dyn rmb::Msg+'a>>,
 }
 
 impl<'a> MsgMgr<'a> {
-    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,&'a (dyn transport::Transport + 'a))>) -> MsgMgr {  MsgMgr { transports, inited: false } }
-    pub fn init(&mut self) -> Result<String, String> { 
-        if self.transports.is_empty() {
+    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,&'a (dyn transport::Transport + 'a))>) -> MsgMgr {  
+        let (st, tr): (Sender<Box<dyn rmb::Msg +'a>>, Receiver<Box<dyn rmb::Msg +'a>>) = mpsc::channel();
+        let (tt, sr): (Sender<Box<dyn rmb::Msg +'a>>, Receiver<Box<dyn rmb::Msg +'a>>) = mpsc::channel();
+        let t = Mutex::new(transports);
+        MsgMgr { 
+            transports: t, 
+            inited: false,
+            self_tx: st,
+            thread_rx: tr,
+            thread_tx: tt,
+            self_rx: sr,
+        } 
+    }
+    pub fn init(&mut self) -> Result<String, String> {
+        let t = self.transports.lock().unwrap();
+        if t.is_empty() {
             return Err("MsgMgr has no transports defined".to_string());
         }
-        for (channel_range,transport) in self.transports.iter() {
+        for (channel_range,transport) in t.iter() {
             transport.register(channel_range, handle_msg).unwrap();
         }
         self.inited = true;
         Ok("Success".to_string()) 
     }
-
+    pub fn run(incoming: Receiver<Box<dyn rmb::Msg>>, 
+                _outgoing: Sender<Box<dyn rmb::Msg>>,
+                _transports: Mutex<Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>>) -> Result<String, String> {
+        thread::spawn(move|| {
+            loop {
+                let _msg = incoming.recv().unwrap();
+            }
+        });
+        Ok("Success".to_string()) 
+    }
     pub fn get_transport_names(&self) -> Result<Vec<String>, String> {
         if self.inited == false {
             return Err("Not Inited".to_string());
         }
         let mut v: Vec<String> = Vec::new();
-        for t in self.transports.iter() {
+        let tr = self.transports.lock().unwrap();
+        for t in tr.iter() {
             v.push(t.1.name().to_string());
         }
         Ok(v)
@@ -47,6 +77,7 @@ impl<'a> MsgMgr<'a> {
     }
 
 }
+
 fn handle_msg(_bus: rmb::Bus, _msg: &dyn rmb::Msg) -> Result<String, String> {
     Ok("".to_string())
 }

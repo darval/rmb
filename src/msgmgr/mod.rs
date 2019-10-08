@@ -7,10 +7,10 @@ use super::rmb;
 pub struct MsgMgr<'a> {
     inited: bool,
     transports: Mutex<Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>>,
-    self_tx: Sender<Box<dyn rmb::Msg+'a>>,
-    thread_tx: Sender<Box<dyn rmb::Msg+'a>>,
-    self_rx: Receiver<Box<dyn rmb::Msg+'a>>,
-    thread_rx: Receiver<Box<dyn rmb::Msg+'a>>,
+    _self_tx: Sender<Box<dyn rmb::Msg+'a>>,
+    _thread_tx: Sender<Box<dyn rmb::Msg+'a>>,
+    _self_rx: Receiver<Box<dyn rmb::Msg+'a>>,
+    _thread_rx: Receiver<Box<dyn rmb::Msg+'a>>,
 }
 
 impl<'a> MsgMgr<'a> {
@@ -21,10 +21,10 @@ impl<'a> MsgMgr<'a> {
         MsgMgr { 
             transports: t, 
             inited: false,
-            self_tx: st,
-            thread_rx: tr,
-            thread_tx: tt,
-            self_rx: sr,
+            _self_tx: st,
+            _thread_rx: tr,
+            _thread_tx: tt,
+            _self_rx: sr,
         } 
     }
     pub fn init(&mut self) -> Result<String, String> {

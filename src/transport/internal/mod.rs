@@ -4,6 +4,7 @@ use crate::transport::{Transport,Bandwidth};
 pub struct TransportInternal {
     name: &'static str,
     bw: Bandwidth,
+    inited: bool,
 }
 
 impl TransportInternal {
@@ -11,13 +12,18 @@ impl TransportInternal {
         TransportInternal {
             name: "internal",
             bw: Bandwidth::High,
+            inited: false,
         }
     }
 
-    pub fn init(&self) -> Result<String, String> {
+    pub fn init(&mut self) -> Result<String, String> {
+        self.inited = true;
         Ok("Sucess".to_string())
     }
 
+    pub fn is_inited(&self) -> bool {
+        self.inited
+    }
 }
 
 impl<'a> Transport for TransportInternal   {
@@ -40,7 +46,7 @@ mod tests {
     use crate::transport::internal;
     #[test]
     fn test_init() {
-        let t = internal::TransportInternal::new();
+        let mut t = internal::TransportInternal::new();
         t.init().unwrap();
     }
 }

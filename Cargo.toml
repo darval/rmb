@@ -12,7 +12,6 @@ license = "MIT"
 
 [dependencies]
 serde = "1.0.101"
-crossbeam = "0.7.2"
 [badges]
 
 # Appveyor: `repository` is required. `branch` is optional; default is `master`
@@ -39,3 +38,9 @@ travis-ci = { repository = "darval/rmb", branch = "development" }
 # - `none`: Displays no badge on crates.io, since the maintainer has not chosen to specify
 #   their intentions, potential crate users will need to investigate on their own.
 maintenance = { status = "experimental" }
+[[test]]
+name = "cucumber"
+harness = false # Allows Cucumber to print output instead of libtest
+
+[dev-dependencies]
+cucumber = { package = "cucumber_rust", version = "^0.6.0" } 

@@ -38,6 +38,9 @@ impl<'a> MsgMgr<'a> {
         self.inited = true;
         Ok("Success".to_string()) 
     }
+    pub fn is_inited(&self) -> bool {
+        self.inited
+    }
     pub fn run(incoming: Receiver<Box<dyn rmb::Msg>>, 
                 _outgoing: Sender<Box<dyn rmb::Msg>>,
                 _transports: Mutex<Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>>) -> Result<String, String> {
@@ -49,7 +52,7 @@ impl<'a> MsgMgr<'a> {
         Ok("Success".to_string()) 
     }
     pub fn get_transport_names(&self) -> Result<Vec<String>, String> {
-        if self.inited == false {
+        if !self.inited {
             return Err("Not Inited".to_string());
         }
         let mut v: Vec<String> = Vec::new();

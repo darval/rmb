@@ -11,10 +11,10 @@ Feature: Getting Started
 
   Scenario: Initing the bus
     Given an inited internal transport
-    And an inited msgmgr
+    And an inited internal msgmgr
     Then init the bus
 
   Scenario: Confirm internal transport
     Given an inited internal transport
-    And an inited msgmgr
+    And an inited internal msgmgr
     Then querying the msgmsg should show internal transport

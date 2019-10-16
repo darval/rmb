@@ -16,17 +16,17 @@ impl TransportInternal {
         }
     }
 
-    pub fn init(&mut self) -> Result<String, String> {
+}
+
+impl<'a> Transport for TransportInternal   {
+    fn init(&mut self) -> Result<String, String> {
         self.inited = true;
         Ok("Sucess".to_string())
     }
 
-    pub fn is_inited(&self) -> bool {
+    fn is_inited(&self) -> bool {
         self.inited
     }
-}
-
-impl<'a> Transport for TransportInternal   {
     fn name(&self) -> &'static str {
         &self.name
     }
@@ -43,7 +43,7 @@ impl<'a> Transport for TransportInternal   {
 }
 #[cfg(test)]
 mod tests {
-    use crate::transport::internal;
+    use crate::transport::{Transport,internal};
     #[test]
     fn test_init() {
         let mut t = internal::TransportInternal::new();

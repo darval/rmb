@@ -6,7 +6,7 @@ use super::rmb;
 
 pub struct MsgMgr<'a> {
     inited: bool,
-    transports: Mutex<Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>>,
+    transports: Mutex<Vec<(std::ops::Range<u32>,Box<dyn transport::Transport + 'a>)>>,
     _self_tx: Sender<Box<dyn rmb::Msg+'a>>,
     _thread_tx: Sender<Box<dyn rmb::Msg+'a>>,
     _self_rx: Receiver<Box<dyn rmb::Msg+'a>>,
@@ -14,7 +14,7 @@ pub struct MsgMgr<'a> {
 }
 
 impl<'a> MsgMgr<'a> {
-    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,&'a (dyn transport::Transport + 'a))>) -> MsgMgr {  
+    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport + 'a>)>) -> MsgMgr {  
         let (st, tr): (Sender<Box<dyn rmb::Msg +'a>>, Receiver<Box<dyn rmb::Msg +'a>>) = mpsc::channel();
         let (tt, sr): (Sender<Box<dyn rmb::Msg +'a>>, Receiver<Box<dyn rmb::Msg +'a>>) = mpsc::channel();
         let t = Mutex::new(transports);
@@ -92,9 +92,9 @@ mod tests {
 
     #[test]
    fn test_init_success() {
-        let t = internal::TransportInternal::new();
-        let mut t = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        t.init().unwrap();
+        let t = Box::new(local::TransportLocal::new());
+        let mut mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
+        mm.init().unwrap();
     }
     #[test]
    fn test_init_no_transport() {
@@ -104,9 +104,9 @@ mod tests {
     }
     #[test]
     fn get_transport_names() {
-        let it = internal::TransportInternal::new();
-        let lt = local::TransportLocal::new();
-        let mut mm = msgmgr::MsgMgr::new(vec![(0..10,&it), (11..20, &lt)]);
+        let it = Box::new(internal::TransportInternal::new());
+        let lt = Box::new(local::TransportLocal::new());
+        let mut mm = msgmgr::MsgMgr::new(vec![(0..10,it), (11..20, lt)]);
         mm.init().unwrap();
         let names = mm.get_transport_names().unwrap();
         assert_eq!(names.len(), 2);

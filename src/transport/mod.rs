@@ -12,6 +12,8 @@ pub enum Bandwidth {
 
 pub trait Transport: Send + Sync {
     fn name(&self) -> &'static str;
+    fn init(&mut self) -> Result<String, String>;
+    fn is_inited(&self) -> bool;
     fn bandwidth(&self) -> &Bandwidth;
     fn register(&self, buses: &std::ops::Range<rmb::Bus>, handler: fn(rmb::Bus, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String>;
     fn publish(&self, ch: rmb::Bus, msg: &dyn rmb::Msg) -> Result<String, String>;

@@ -56,8 +56,8 @@ mod tests {
     #[test]
     #[ignore]
     fn test_subscribe_registered() {
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
+        let t = Box::new(local::TransportLocal::new());
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
         let mut r = Rmb::new(mm);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
@@ -66,8 +66,8 @@ mod tests {
    #[ignore]
    #[should_panic(expected = "Not Registered")]
     fn test_subscribe_unregistered() {
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
+        let t = Box::new(local::TransportLocal::new());
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
         let mut r = Rmb::new(mm);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();

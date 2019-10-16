@@ -4,6 +4,7 @@ use crate::transport::{Transport,Bandwidth};
 pub struct TransportNetwork {
     name: &'static str,
     bw: Bandwidth,
+    inited: bool,
 }
 
 impl TransportNetwork {
@@ -11,6 +12,7 @@ impl TransportNetwork {
         TransportNetwork {
             name: "network",
             bw: Bandwidth::Low,
+            inited: false,
         }
     }
 
@@ -21,6 +23,14 @@ impl TransportNetwork {
 }
 
 impl<'a> Transport for TransportNetwork   {
+    fn init(&mut self) -> Result<String, String> {
+        self.inited = true;
+        Ok("Sucess".to_string())
+    }
+
+    fn is_inited(&self) -> bool {
+        self.inited
+    }
     fn name(&self) -> &'static str {
         &self.name
     }

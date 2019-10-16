@@ -4,13 +4,15 @@ use crate::transport::{Transport,Bandwidth};
 pub struct TransportLocal {
     name: &'static str,
     bw: Bandwidth,
+    inited: bool,
 }
 
 impl TransportLocal {
     pub fn new() -> TransportLocal {
         TransportLocal {
             name: "local",
-            bw: Bandwidth::Medium
+            bw: Bandwidth::Medium,
+            inited: false
         }
     }
 
@@ -21,6 +23,14 @@ impl TransportLocal {
 }
 
 impl<'a> Transport for TransportLocal   {
+    fn init(&mut self) -> Result<String, String> {
+        self.inited = true;
+        Ok("Sucess".to_string())
+    }
+
+    fn is_inited(&self) -> bool {
+        self.inited
+    }
     fn name(&self) -> &'static str {
         &self.name
     }

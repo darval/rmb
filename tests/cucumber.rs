@@ -1,19 +1,19 @@
 use cucumber::{cucumber, before, after};
-use msgbus::{msgmgr,transport::internal};
+use msgbus::msgmgr;
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     s: String,
-    trans: internal::TransportInternal,
+    msgmgr: msgmgr::MsgMgr<'static>,
 }
 
-impl cucumber::World for MyWorld {}
-impl std::default::Default for MyWorld {
+impl<'a> cucumber::World for MyWorld {}
+impl<'a> std::default::Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
         MyWorld { 
             s: "a default string".to_string(),
-            trans: internal::TransportInternal::new(),
+            msgmgr: msgmgr::MsgMgr::new(vec![])
         }
     }
 }
@@ -21,7 +21,7 @@ impl std::default::Default for MyWorld {
 mod feature_getting_started_steps {
     
 use cucumber::steps;
-//use msgbus::{msgmgr};
+use msgbus::transport::{Transport, internal, local, network};
 
     // Any type that implements cucumber::World + Default can be the world
     steps!(super::MyWorld => {
@@ -30,51 +30,88 @@ use cucumber::steps;
             // Set up your context in given steps
         };
 
-        when "I choose a transport" |world, _step| {
+        when regex "^I choose a (.*) transport$" |world, _, _step| {
             // Take actions
             let new_string = format!("{}.", &world.s);
             world.s = new_string;
         };
 
-        then "init the transport" |world, _step| {
+        then regex "^init the (.*) transport$" |world, name, _step| {
             // Check that the outcomes to be observed have occurred
             assert_eq!(world.s, "Some string.");
-            world.trans.init().unwrap();
+            let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
+                "internal" => Box::new(internal::TransportInternal::new()),
+                "local" => Box::new(local::TransportLocal::new()),
+                "network" => Box::new(network::TransportNetwork::new()),
+                _ => panic!("Unknown transport type")
+            };
+            t.init().unwrap();
+            assert_eq!(t.name(), name[1]);
         };
 
-        given "an inited transport" |world, _step| {
-            world.trans.init().unwrap();
-            assert_eq!(world.trans.is_inited(), true);
+        given regex "^an inited (.*) transport$" |world, name, _step| {
+           let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
+                "internal" => Box::new(internal::TransportInternal::new()),
+                "local" => Box::new(local::TransportLocal::new()),
+                "network" => Box::new(network::TransportNetwork::new()),
+                _ => panic!("Unknown transport type")
+            };
+            t.init().unwrap();
+            assert_eq!(t.name(), name[1]);
+            assert_eq!(t.is_inited(), true);
         };
 
-        then "init the message manager" |world, _step| {
-            let mut mm = crate::msgmgr::MsgMgr::new(vec![(0..10,&world.trans)]);
-            mm.init().unwrap();
-            assert_eq!(mm.is_inited(), true);
+        then regex "init the (.*) message manager" |world, name, _step| {
+           let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
+                "internal" => Box::new(internal::TransportInternal::new()),
+                "local" => Box::new(local::TransportLocal::new()),
+                "network" => Box::new(network::TransportNetwork::new()),
+                _ => panic!("Unknown transport type")
+            };
+            t.init().unwrap();
+            assert_eq!(t.name(), name[1]);
+            assert_eq!(t.is_inited(), true);
+            world.msgmgr = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            world.msgmgr.init().unwrap();
+            assert_eq!(world.msgmgr.is_inited(), true);
         };
 
-        then regex r"^we can (.*) rules with regex$" |_world, matches, _step| {
-            // And access them as an array
-            assert_eq!(matches[1], "implement");
+        given regex "an inited (.*) msgmgr" |world, name, _step| {
+           let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
+                "internal" => Box::new(internal::TransportInternal::new()),
+                "local" => Box::new(local::TransportLocal::new()),
+                "network" => Box::new(network::TransportNetwork::new()),
+                _ => panic!("Unknown transport type")
+            };
+            t.init().unwrap();
+            assert_eq!(t.name(), name[1]);
+            assert_eq!(t.is_inited(), true);
+            world.msgmgr = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            world.msgmgr.init().unwrap();
+            assert_eq!(world.msgmgr.is_inited(), true);
         };
+    //     then regex r"^we can (.*) rules with regex$" |_world, matches, _step| {
+    //         // And access them as an array
+    //         assert_eq!(matches[1], "implement");
+    //     };
 
-        then regex r"^we can also match (\d+) (.+) types$" (usize, String) |_world, num, word, _step| {
-            // `num` will be of type usize, `word` of type String
-            assert_eq!(num, 42);
-            assert_eq!(word, "olika");
-        };
+    //     then regex r"^we can also match (\d+) (.+) types$" (usize, String) |_world, num, word, _step| {
+    //         // `num` will be of type usize, `word` of type String
+    //         assert_eq!(num, 42);
+    //         assert_eq!(word, "olika");
+    //     };
 
-        then "we can use data tables to provide more parameters" |_world, step| {
-            let table = step.table().unwrap().clone();
+    //     then "we can use data tables to provide more parameters" |_world, step| {
+    //         let table = step.table().unwrap().clone();
 
-            assert_eq!(table.header, vec!["key", "value"]);
+    //         assert_eq!(table.header, vec!["key", "value"]);
 
-            let expected_keys = table.rows.iter().map(|row| row[0].to_owned()).collect::<Vec<_>>();
-            let expected_values = table.rows.iter().map(|row| row[1].to_owned()).collect::<Vec<_>>();
+    //         let expected_keys = table.rows.iter().map(|row| row[0].to_owned()).collect::<Vec<_>>();
+    //         let expected_values = table.rows.iter().map(|row| row[1].to_owned()).collect::<Vec<_>>();
 
-            assert_eq!(expected_keys, vec!["a", "b"]);
-            assert_eq!(expected_values, vec!["fizz", "buzz"]);
-        };
+    //         assert_eq!(expected_keys, vec!["a", "b"]);
+    //         assert_eq!(expected_values, vec!["fizz", "buzz"]);
+    //     };
     });
 }
 

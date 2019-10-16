@@ -56,8 +56,8 @@
 //!
 //!     let hello = MyMsg { s: "Hello".to_string() };
 //!     let bus = 1;
-//!     let t = internal::TransportInternal::new();
-//!     let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
+//!     let t = Box::new(internal::TransportInternal::new());
+//!     let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
 //!     let mut mb = rmb::Rmb::new(mm);
 //!     mb.init().unwrap();
 //!     mb.subscribe(bus, handler).unwrap();
@@ -70,11 +70,11 @@ pub mod transport;
 
 #[cfg(test)]
 mod tests {
-    use super::{rmb, msgmgr, transport::local, transport::internal};
+    use super::{rmb, msgmgr, transport::local};
     #[test]
     fn test_init() {
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
+        let t = Box::new(local::TransportLocal::new());
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
         let mut r = rmb::Rmb::new(mm);
         r.init().unwrap();
     }
@@ -92,9 +92,9 @@ mod tests {
 
         let hello = "Hello".to_string();
         let bus = 1;
-        let t = internal::TransportInternal::new();
-        let mb = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = rmb::Rmb::new(mb);
+        let t = Box::new(local::TransportLocal::new());
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
+        let mut r = rmb::Rmb::new(mm);
         r.init().unwrap();
         // r.subscribe(bus, handler).unwrap();
         r.publish(bus, &hello).unwrap();

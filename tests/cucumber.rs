@@ -4,7 +4,6 @@ use msgbus::msgmgr;
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     s: String,
-    msgmgr: msgmgr::MsgMgr<'static>,
 }
 
 impl<'a> cucumber::World for MyWorld {}
@@ -13,7 +12,6 @@ impl<'a> std::default::Default for MyWorld {
         // This function is called every time a new scenario is started
         MyWorld { 
             s: "a default string".to_string(),
-            msgmgr: msgmgr::MsgMgr::new(vec![])
         }
     }
 }
@@ -21,24 +19,24 @@ impl<'a> std::default::Default for MyWorld {
 mod feature_getting_started_steps {
     
 use cucumber::steps;
-use msgbus::transport::{Transport, internal, local, network};
+use msgbus::{rmb, transport::{Transport, internal, local, network}};
 
     // Any type that implements cucumber::World + Default can be the world
     steps!(super::MyWorld => {
-        given "nothing" |world, _step| {
-            world.s = "Some string".to_string();
+        given regex "the following (.*) transports" |world, name, _step| {
             // Set up your context in given steps
+            world.s = format!("{}", name[1]);
         };
 
         when regex "^I choose a (.*) transport$" |world, _, _step| {
             // Take actions
-            let new_string = format!("{}.", &world.s);
+            let new_string = format!("{}", &world.s);
             world.s = new_string;
         };
 
         then regex "^init the (.*) transport$" |world, name, _step| {
             // Check that the outcomes to be observed have occurred
-            assert_eq!(world.s, "Some string.");
+            assert_eq!(world.s, name[1]);
             let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
                 "internal" => Box::new(internal::TransportInternal::new()),
                 "local" => Box::new(local::TransportLocal::new()),
@@ -49,7 +47,7 @@ use msgbus::transport::{Transport, internal, local, network};
             assert_eq!(t.name(), name[1]);
         };
 
-        given regex "^an inited (.*) transport$" |world, name, _step| {
+        given regex "^an inited (.*) transport$" |_world, name, _step| {
            let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
                 "internal" => Box::new(internal::TransportInternal::new()),
                 "local" => Box::new(local::TransportLocal::new()),
@@ -61,7 +59,7 @@ use msgbus::transport::{Transport, internal, local, network};
             assert_eq!(t.is_inited(), true);
         };
 
-        then regex "init the (.*) message manager" |world, name, _step| {
+        then regex "init the (.*) message manager" |_world, name, _step| {
            let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
                 "internal" => Box::new(internal::TransportInternal::new()),
                 "local" => Box::new(local::TransportLocal::new()),
@@ -71,12 +69,12 @@ use msgbus::transport::{Transport, internal, local, network};
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            world.msgmgr = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
-            world.msgmgr.init().unwrap();
-            assert_eq!(world.msgmgr.is_inited(), true);
+            let mut mm = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            mm.init().unwrap();
+            assert_eq!(mm.is_inited(), true);
         };
 
-        given regex "an inited (.*) msgmgr" |world, name, _step| {
+        given regex "an inited (.*) msgmgr" |_world, name, _step| {
            let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
                 "internal" => Box::new(internal::TransportInternal::new()),
                 "local" => Box::new(local::TransportLocal::new()),
@@ -86,9 +84,46 @@ use msgbus::transport::{Transport, internal, local, network};
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            world.msgmgr = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
-            world.msgmgr.init().unwrap();
-            assert_eq!(world.msgmgr.is_inited(), true);
+            let mut mm = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            mm.init().unwrap();
+            assert_eq!(mm.is_inited(), true);
+        };
+
+        then regex "init the (.*) bus" |_world, name, _step| {
+           let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
+                "internal" => Box::new(internal::TransportInternal::new()),
+                "local" => Box::new(local::TransportLocal::new()),
+                "network" => Box::new(network::TransportNetwork::new()),
+                _ => panic!("Unknown transport type")
+            };
+            t.init().unwrap();
+            assert_eq!(t.name(), name[1]);
+            assert_eq!(t.is_inited(), true);
+            let mut mm = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            mm.init().unwrap();
+            assert_eq!(mm.is_inited(), true);
+            let mut r = rmb::Rmb::new(mm);
+            r.init().unwrap();
+
+        };
+
+        then regex "querying the msgmgr should show (.*) transport" | _world, name, _step | {
+           let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
+                "internal" => Box::new(internal::TransportInternal::new()),
+                "local" => Box::new(local::TransportLocal::new()),
+                "network" => Box::new(network::TransportNetwork::new()),
+                _ => panic!("Unknown transport type")
+            };
+            t.init().unwrap();
+            assert_eq!(t.name(), name[1]);
+            assert_eq!(t.is_inited(), true);
+            let mut mm = crate::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            mm.init().unwrap();
+            assert_eq!(mm.is_inited(), true);
+            let mut r = rmb::Rmb::new(mm);
+            r.init().unwrap();
+            assert_eq!(r.get_transport_names().unwrap()[0], name[1]);
+
         };
     //     then regex r"^we can (.*) rules with regex$" |_world, matches, _step| {
     //         // And access them as an array

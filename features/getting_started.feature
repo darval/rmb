@@ -1,20 +1,45 @@
 Feature: Getting Started
 
-  Scenario: Initing a transport
-    Given nothing
-    When I choose a internal transport
-    Then init the internal transport
+  Scenario Outline: Initing a transport
+    Given the following <type> transports:
+    When I choose a <type> transport
+    Then init the <type> transport
 
-  Scenario: Initing the message manager
-    Given an inited internal transport
-    Then init the internal message manager
+    Examples: 
+      | type     |
+      | internal |
+      | local    |
+      | network  |
 
-  Scenario: Initing the bus
-    Given an inited internal transport
-    And an inited internal msgmgr
-    Then init the bus
 
-  Scenario: Confirm internal transport
-    Given an inited internal transport
-    And an inited internal msgmgr
-    Then querying the msgmsg should show internal transport
+  Scenario Outline: Initing the message manager
+    Given an inited <type> transport
+    Then init the <type> message manager
+
+    Examples: 
+      | type     |
+      | internal |
+      | local    |
+      | network  |
+
+  Scenario Outline: Initing the bus
+    Given an inited <type> transport
+    And an inited <type> msgmgr
+    Then init the <type> bus
+
+    Examples: 
+      | type     |
+      | internal |
+      | local    |
+      | network  |
+
+  Scenario Outline: Confirm the transport
+    Given an inited <type> transport
+    And an inited <type> msgmgr
+    Then querying the msgmgr should show <type> transport
+
+    Examples: 
+      | type     |
+      | internal |
+      | local    |
+      | network  |

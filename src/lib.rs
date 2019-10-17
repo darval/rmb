@@ -61,7 +61,8 @@
 //!     let mut mb = rmb::Rmb::new(mm);
 //!     mb.init().unwrap();
 //!     mb.subscribe(bus, handler).unwrap();
-//!     mb.publish(bus, &hello).unwrap();
+//!     mb.publish(bus, Box::new(hello)).unwrap();
+
 //! 
 //! }
 pub mod rmb;
@@ -97,6 +98,6 @@ mod tests {
         let mut r = rmb::Rmb::new(mm);
         r.init().unwrap();
         // r.subscribe(bus, handler).unwrap();
-        r.publish(bus, &hello).unwrap();
+        r.publish(bus, Box::new(hello)).unwrap();
     }
 }

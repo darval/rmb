@@ -1,27 +1,52 @@
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::{mpsc, Mutex};
 use std::thread;
+use std::fmt;
 use super::transport;
 use super::rmb;
+
+pub struct RmbMsg<'a> {
+    bus: rmb::Bus,
+    msg: Box<dyn rmb::Msg + 'a>,
+}
+
+const CONTROLBUS: rmb::Bus = 0;
+
+#[derive(Debug)]
+enum ControlMsg {
+    Publish,
+    Subscribe,
+}
+
+impl fmt::Display for ControlMsg {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "{:?}", self)
+    }
+}
+impl rmb::Msg for ControlMsg {}
 
 pub struct MsgMgr<'a> {
     inited: bool,
     transports: Mutex<Vec<(std::ops::Range<u32>,Box<dyn transport::Transport + 'a>)>>,
-    _self_tx: Sender<Box<dyn rmb::Msg+'a>>,
-    _thread_tx: Sender<Box<dyn rmb::Msg+'a>>,
-    _self_rx: Receiver<Box<dyn rmb::Msg+'a>>,
-    _thread_rx: Receiver<Box<dyn rmb::Msg+'a>>,
+    self_tx: Sender<RmbMsg<'a>>,
+    _thread_tx: Sender<RmbMsg<'a>>,
+    _self_rx: Receiver<RmbMsg<'a>>,
+    _thread_rx: Receiver<RmbMsg<'a>>,
 }
 
 impl<'a> MsgMgr<'a> {
     pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport + 'a>)>) -> MsgMgr {  
-        let (st, tr): (Sender<Box<dyn rmb::Msg +'a>>, Receiver<Box<dyn rmb::Msg +'a>>) = mpsc::channel();
-        let (tt, sr): (Sender<Box<dyn rmb::Msg +'a>>, Receiver<Box<dyn rmb::Msg +'a>>) = mpsc::channel();
+        let (st, tr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
+        let (tt, sr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
         let t = Mutex::new(transports);
         MsgMgr { 
             transports: t, 
             inited: false,
-            _self_tx: st,
+            self_tx: st,
             _thread_rx: tr,
             _thread_tx: tt,
             _self_rx: sr,
@@ -41,12 +66,23 @@ impl<'a> MsgMgr<'a> {
     pub fn is_inited(&self) -> bool {
         self.inited
     }
-    pub fn run(incoming: Receiver<Box<dyn rmb::Msg>>, 
-                _outgoing: Sender<Box<dyn rmb::Msg>>,
-                _transports: Mutex<Vec<(std::ops::Range<u32>,&'a (dyn transport::Transport + 'a))>>) -> Result<String, String> {
+    pub fn run(incoming: Receiver<RmbMsg<'static>>, 
+                _outgoing: Sender<RmbMsg<'static>>,
+                transports: Mutex<Vec<(std::ops::Range<u32>,&'static (dyn transport::Transport + 'static))>>) -> Result<String, String> {
         thread::spawn(move|| {
             loop {
-                let _msg = incoming.recv().unwrap();
+                let msg = incoming.recv().unwrap();
+                if msg.bus == CONTROLBUS {
+
+                } else {
+                    let transports = transports.lock().unwrap();
+                    for t in (*transports).iter() {
+                        if t.0.contains(&msg.bus) { // if this transport support this bus
+                            t.1.publish(msg.bus, &*msg.msg).unwrap();
+                        }
+
+                    }
+                }
             }
         });
         Ok("Success".to_string()) 
@@ -62,12 +98,14 @@ impl<'a> MsgMgr<'a> {
         }
         Ok(v)
     }
-    pub fn publish(&mut self, _bus: rmb::Bus, _msg: &'a dyn rmb::Msg) -> Result<String, String> {
-        // if self.inited {
-            // self.transport.publish(ch, msg)
-        // } else {
+    pub fn publish(&mut self, bus: rmb::Bus, msg: Box<dyn rmb::Msg> ) -> Result<String, String> {
+        if self.is_inited() {
+            let msg = RmbMsg { bus, msg }; 
+            self.self_tx.send(msg).unwrap();
+            Ok("Success".to_string())
+        } else {
             Ok("Not Implemented".to_string())
-        // }
+        }
     }
 
 

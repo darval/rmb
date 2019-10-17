@@ -28,7 +28,7 @@ impl<'a> Rmb<'a> {
         }
     }
 
-    pub fn publish(&mut self, bus: Bus, msg: &'a dyn Msg) -> Result<String, String> {
+    pub fn publish(&mut self, bus: Bus, msg: Box<dyn Msg>) -> Result<String, String> {
         if self.inited {
             self.msgmgr.publish(bus, msg)
         } else {

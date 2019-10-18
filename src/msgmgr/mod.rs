@@ -41,6 +41,23 @@ pub struct MsgMgr<'a> {
 }
 
 impl<'a> MsgMgr<'a> {
+//!
+//! Returns a Message Manager object
+//! 
+//! There should only be one MsgMgr per process. (This limitation may change in future versions)
+//! 
+//! # Arguments
+//! A Vector of range/transport pairs for this object to manage.  This allows you to assign different bus ranges
+//! to different transport implementors 
+//! 
+//! # Example
+//! ```
+//! use msgbus::{msgmgr,transport::{internal,local}};
+//! let i = Box::new(internal::TransportInternal::new());
+//! let l = Box::new(local::TransportLocal::new());
+//! let mm = msgmgr::MsgMgr::new(vec![(1..10,i),(11..20,l)]);
+//! ```
+//! 
     pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport<'a> + 'a>)>) -> MsgMgr<'a> {  
         let (st, tr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
         let (tt, sr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();

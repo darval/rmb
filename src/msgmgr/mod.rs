@@ -5,6 +5,7 @@ use std::fmt;
 use super::transport;
 use super::rmb;
 
+#[derive(Clone)]
 pub struct RmbMsg<'a> {
     bus: rmb::Bus,
     msg: Box<dyn rmb::Msg + 'a>,
@@ -12,7 +13,7 @@ pub struct RmbMsg<'a> {
 
 const CONTROLBUS: rmb::Bus = 0;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 enum ControlMsg {
     Publish,
     Subscribe,
@@ -31,7 +32,8 @@ impl rmb::Msg for ControlMsg {}
 
 pub struct MsgMgr<'a> {
     inited: bool,
-    transports: Mutex<Vec<(std::ops::Range<u32>,Box<dyn transport::Transport + 'a>)>>,
+    transports: Mutex<Vec<(std::ops::Range<u32>,Box<dyn transport::Transport<'a> + 'a>)>>,
+    que: Mutex<queue::Queue<RmbMsg<'a>>>,
     self_tx: Sender<RmbMsg<'a>>,
     _thread_tx: Sender<RmbMsg<'a>>,
     _self_rx: Receiver<RmbMsg<'a>>,
@@ -39,12 +41,13 @@ pub struct MsgMgr<'a> {
 }
 
 impl<'a> MsgMgr<'a> {
-    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport + 'a>)>) -> MsgMgr {  
+    pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport<'a> + 'a>)>) -> MsgMgr<'a> {  
         let (st, tr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
         let (tt, sr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
         let t = Mutex::new(transports);
         MsgMgr { 
-            transports: t, 
+            transports: t,
+            que: Mutex::new(queue::Queue::new()), 
             inited: false,
             self_tx: st,
             _thread_rx: tr,
@@ -58,7 +61,7 @@ impl<'a> MsgMgr<'a> {
             return Err("MsgMgr has no transports defined".to_string());
         }
         for (channel_range,transport) in t.iter() {
-            transport.register(channel_range, handle_msg).unwrap();
+            transport.register(channel_range, MsgMgr::handle_msg).unwrap();
         }
         self.inited = true;
         Ok("Success".to_string()) 
@@ -71,7 +74,7 @@ impl<'a> MsgMgr<'a> {
                 transports: Mutex<Vec<(std::ops::Range<u32>,&'static (dyn transport::Transport + 'static))>>) -> Result<String, String> {
         thread::spawn(move|| {
             loop {
-                let msg = incoming.recv().unwrap();
+                let msg = incoming.recv().unwrap(); // incoming msg from this thread
                 if msg.bus == CONTROLBUS {
 
                 } else {
@@ -98,18 +101,21 @@ impl<'a> MsgMgr<'a> {
         }
         Ok(v)
     }
-    pub fn publish(&mut self, bus: rmb::Bus, msg: Box<dyn rmb::Msg> ) -> Result<String, String> {
+    pub fn publish(&mut self, bus: rmb::Bus, msg: Box<dyn rmb::Msg + 'a> ) -> Result<String, String> {
         if self.is_inited() {
+            if bus == CONTROLBUS {
+                return Err("Bus 0 (ControlBus) is for internal use only".to_string());
+            }
             let msg = RmbMsg { bus, msg }; 
             self.self_tx.send(msg).unwrap();
             Ok("Success".to_string())
         } else {
-            Ok("Not Implemented".to_string())
+            Err("Not Inited".to_string())
         }
     }
 
 
-    pub fn subscribe(&mut self, _bus: rmb::Bus, _f: fn(rmb::Bus, &dyn rmb::Msg)-> Result<String, String>) -> Result<String, String> {
+    pub fn subscribe(&mut self, _bus: rmb::Bus, _f: fn(rmb::Bus, Box<dyn rmb::Msg + 'a>)-> Result<String, String>) -> Result<String, String> {
         // if self.inited {
             // self.transport.subscribe(ch, f)
         // } else {
@@ -117,12 +123,14 @@ impl<'a> MsgMgr<'a> {
         // }
     }
 
-}
+    fn handle_msg(&mut self, bus: rmb::Bus, msg: Box<dyn rmb::Msg + 'a>) -> Result<String, String> {
+        let mut q = self.que.lock().unwrap();
+        let msg = RmbMsg { bus, msg };
+        q.queue(msg).unwrap();
+        Ok("".to_string())
+    }
 
-fn handle_msg(_bus: rmb::Bus, _msg: &dyn rmb::Msg) -> Result<String, String> {
-    Ok("".to_string())
 }
-
 #[cfg(test)]
 mod tests {
     use crate::msgmgr;

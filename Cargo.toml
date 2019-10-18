@@ -12,6 +12,8 @@ license = "MIT"
 
 [dependencies]
 serde = "1.0.101"
+queue = "0.3.1"
+
 [badges]
 
 # Appveyor: `repository` is required. `branch` is optional; default is `master`

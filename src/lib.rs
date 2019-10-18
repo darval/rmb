@@ -38,6 +38,7 @@
 //! use std::fmt;
 //! 
 //! fn main() {
+//!     #[derive(Clone)]
 //!     struct MyMsg {
 //!         s: String,
 //!     }
@@ -49,7 +50,7 @@
 //!             write!(f, "{}", self.s)
 //!         }
 //!     }
-//!     fn handler(_bus: rmb::Bus, msg: &dyn rmb::Msg)-> Result<String, String> {
+//!     fn handler(_bus: rmb::Bus, msg: Box<dyn rmb::Msg>)-> Result<String, String> {
 //!         println!("{}", msg); 
 //!         Ok(msg.to_string())
 //!     }

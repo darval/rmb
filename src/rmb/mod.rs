@@ -3,8 +3,24 @@ use super::msgmgr;
 
 pub type Bus = u32;
 
-pub trait Msg: Send + Sync + Display {
+pub trait Msg: Send + Sync + Display + MsgClone {
 
+}
+
+pub trait MsgClone {
+    fn clone_box(&self) -> Box<dyn Msg>;
+}
+
+impl<T: 'static + Msg + Clone> MsgClone for T {
+    fn clone_box(&self) -> Box<dyn Msg> {
+        Box::new(self.clone())
+    }
+}
+
+impl<'a> Clone for Box<dyn Msg + 'a> {
+    fn clone(&self) -> Box<dyn Msg + 'a> {
+        self.clone_box()
+    }
 }
 
 pub struct Rmb<'a> {
@@ -36,7 +52,7 @@ impl<'a> Rmb<'a> {
         }
     }
 
-    pub fn subscribe(&mut self, bus: Bus, f: fn(Bus, &dyn Msg)-> Result<String, String>) -> Result<String, String> {
+    pub fn subscribe(&mut self, bus: Bus, f: fn(Bus, Box<dyn Msg + 'a>)-> Result<String, String>) -> Result<String, String> {
         if self.inited {
             self.msgmgr.subscribe(bus, f)
         } else {

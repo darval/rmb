@@ -42,9 +42,7 @@
 //!     struct MyMsg {
 //!         s: String,
 //!     }
-//!     impl rmb::Msg for MyMsg {
-//!
-//!     }
+//!     impl rmb::Msg for MyMsg { }
 //!     impl fmt::Display for MyMsg {
 //!         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //!             write!(f, "{}", self.s)

@@ -41,23 +41,23 @@ pub struct MsgMgr<'a> {
 }
 
 impl<'a> MsgMgr<'a> {
-//!
-//! Returns a Message Manager object
-//! 
-//! There should only be one MsgMgr per process. (This limitation may change in future versions)
-//! 
-//! # Arguments
-//! A Vector of range/transport pairs for this object to manage.  This allows you to assign different bus ranges
-//! to different transport implementors 
-//! 
-//! # Example
-//! ```
-//! use msgbus::{msgmgr,transport::{internal,local}};
-//! let i = Box::new(internal::TransportInternal::new());
-//! let l = Box::new(local::TransportLocal::new());
-//! let mm = msgmgr::MsgMgr::new(vec![(1..10,i),(11..20,l)]);
-//! ```
-//! 
+///
+/// Returns a Message Manager object
+/// 
+/// There should only be one MsgMgr per process. (This limitation may change in future versions)
+/// 
+/// # Arguments
+/// A Vector of range/transport pairs for this object to manage.  This allows you to assign different bus ranges
+/// to different transport implementors 
+/// 
+/// # Example
+/// ```
+/// use msgbus::{msgmgr,transport::{internal,local}};
+/// let i = Box::new(internal::TransportInternal::new());
+/// let l = Box::new(local::TransportLocal::new());
+/// let mm = msgmgr::MsgMgr::new(vec![(1..10,i),(11..20,l)]);
+/// ```
+/// 
     pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport<'a> + 'a>)>) -> MsgMgr<'a> {  
         let (st, tr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
         let (tt, sr): (Sender<RmbMsg<'a>>, Receiver<RmbMsg<'a>>) = mpsc::channel();
@@ -72,6 +72,9 @@ impl<'a> MsgMgr<'a> {
             _self_rx: sr,
         } 
     }
+///
+/// Initialize the Message Manager
+///     
     pub fn init(&mut self) -> Result<String, String> {
         let t = self.transports.lock().unwrap();
         if t.is_empty() {
@@ -83,9 +86,16 @@ impl<'a> MsgMgr<'a> {
         self.inited = true;
         Ok("Success".to_string()) 
     }
+///
+/// Checks to see if the Message Manager has been initialized
+///     
     pub fn is_inited(&self) -> bool {
         self.inited
     }
+///
+/// Runs this Message Manager service. 
+/// This method is called by the overarching Message Bus when it is ready to run
+///     
     pub fn run(incoming: Receiver<RmbMsg<'static>>, 
                 _outgoing: Sender<RmbMsg<'static>>,
                 transports: Mutex<Vec<(std::ops::Range<u32>,&'static (dyn transport::Transport + 'static))>>) -> Result<String, String> {
@@ -96,17 +106,25 @@ impl<'a> MsgMgr<'a> {
 
                 } else {
                     let transports = transports.lock().unwrap();
-                    for t in (*transports).iter() {
-                        if t.0.contains(&msg.bus) { // if this transport support this bus
-                            t.1.publish(msg.bus, &*msg.msg).unwrap();
-                        }
-
-                    }
+                    // publish on each transports which has a matching bus range
+                    (*transports).iter()
+                                 .filter(|t| t.0.contains(&msg.bus))
+                                 .for_each(|t| { 
+                                     t.1.publish(msg.bus, &*msg.msg).unwrap(); 
+                                     ()
+                                });
                 }
             }
-        });
+        } );
         Ok("Success".to_string()) 
     }
+///
+/// Get the names of transports registered with the message manager
+/// 
+/// ## Returns
+/// Returns a Result object, with the success path containing a vector of Strings
+/// with all the registered transport names.
+///
     pub fn get_transport_names(&self) -> Result<Vec<String>, String> {
         if !self.inited {
             return Err("Not Inited".to_string());
@@ -133,11 +151,13 @@ impl<'a> MsgMgr<'a> {
 
 
     pub fn subscribe(&mut self, _bus: rmb::Bus, _f: fn(rmb::Bus, Box<dyn rmb::Msg + 'a>)-> Result<String, String>) -> Result<String, String> {
-        // if self.inited {
-            // self.transport.subscribe(ch, f)
-        // } else {
+        if self.inited {
+            // let msg = RmbMsg { bus: CONTROLBUS, msg: Box::new(RmbMsg { bus, msg})};
+            // self.self_tx.send(msg).unwrap();
             Ok("Not Implemented".to_string())
-        // }
+        } else {
+            Err("Not Inited".to_string())
+        }
     }
 
     fn handle_msg(&mut self, bus: rmb::Bus, msg: Box<dyn rmb::Msg + 'a>) -> Result<String, String> {

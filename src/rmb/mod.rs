@@ -1,9 +1,10 @@
 use std::fmt::Display;
+use std::any::Any;
 use super::msgmgr;
 
 pub type Bus = u32;
 
-pub trait Msg: Send + Sync + Display + MsgClone {
+pub trait Msg: Send + Sync + Display + MsgClone + Any {
 
 }
 
@@ -44,7 +45,7 @@ impl<'a> Rmb<'a> {
         }
     }
 
-    pub fn publish(&mut self, bus: Bus, msg: Box<dyn Msg>) -> Result<String, String> {
+    pub fn publish(&mut self, bus: Bus, msg: Box<dyn Msg + 'a>) -> Result<String, String> {
         if self.inited {
             self.msgmgr.publish(bus, msg)
         } else {

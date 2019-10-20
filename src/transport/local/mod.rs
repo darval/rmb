@@ -39,7 +39,7 @@ impl<'a> Transport<'a> for TransportLocal   {
         &self.bw
     }
 
-    fn register(&self, _buses: &std::ops::Range<rmb::Bus>, _handler: fn(&'a mut msgmgr::MsgMgr<'a>, rmb::Bus, Box<dyn rmb::Msg + 'a>)-> Result<String, String>) -> Result<String, String> {
+    fn register(&self, _buses: &std::ops::Range<rmb::Bus>, _handler: fn(&'a mut msgmgr::MsgMgr<'a>, rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String>) -> Result<String, String> {
         Ok("Success".to_string())
     }
     fn publish(&self, _bus: rmb::Bus, _msg: &dyn rmb::Msg) -> Result<String, String> {

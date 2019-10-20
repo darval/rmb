@@ -16,7 +16,7 @@ pub trait Transport<'a>: Send + Sync {
     fn init(&mut self) -> Result<String, String>;
     fn is_inited(&self) -> bool;
     fn bandwidth(&self) -> &Bandwidth;
-    fn register(&self, buses: &std::ops::Range<rmb::Bus>, handler: fn(&'a mut msgmgr::MsgMgr<'a>, rmb::Bus, Box<dyn rmb::Msg + 'a>)-> Result<String, String>) -> Result<String, String>;
+    fn register(&self, buses: &std::ops::Range<rmb::Bus>, handler: fn(&'a mut msgmgr::MsgMgr<'a>, rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String>) -> Result<String, String>;
     fn publish(&self, ch: rmb::Bus, msg: &dyn rmb::Msg) -> Result<String, String>;
 }
 

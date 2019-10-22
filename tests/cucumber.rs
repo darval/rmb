@@ -166,7 +166,7 @@ fn setup() {
 }
 
 cucumber! {
-    features: "./features", // Path to our feature files
+    features: "./tests/features", // Path to our feature files
     world: ::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
         feature_getting_started_steps::steps // the `steps!` macro creates a `steps` function in a module

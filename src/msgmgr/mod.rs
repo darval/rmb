@@ -2,7 +2,6 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::sync::{mpsc, Mutex};
 use std::thread;
 use std::fmt;
-use std::any::Any;
 use hashbrown::HashMap;
 use super::transport;
 use super::rmb;
@@ -37,7 +36,7 @@ pub struct MsgMgr<'a> {
     inited: bool,
     transports: Mutex<Vec<(std::ops::Range<u32>,Box<dyn transport::Transport<'a> + 'a>)>>,
     que: Mutex<queue::Queue<RmbMsg>>,
-    subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> >>>,
+    _subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> >>>,
     self_tx: Sender<RmbMsg>,
     _thread_tx: Sender<RmbMsg>,
     _self_rx: Receiver<RmbMsg>,
@@ -65,11 +64,10 @@ impl<'a> MsgMgr<'a> {
     pub fn new(transports: Vec<(std::ops::Range<rmb::Bus>,Box<dyn transport::Transport<'a> + 'a>)>) -> MsgMgr<'a> {  
         let (st, tr): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
         let (tt, sr): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
-        let t = Mutex::new(transports);
         MsgMgr { 
-            transports: t,
+            transports: Mutex::new(transports),
             que: Mutex::new(queue::Queue::new()),
-            subscribers: Mutex::new(HashMap::new()),
+            _subscribers: Mutex::new(HashMap::new()),
             inited: false,
             self_tx: st,
             _thread_rx: tr,
@@ -107,20 +105,20 @@ impl<'a> MsgMgr<'a> {
     pub fn run(incoming: Receiver<RmbMsg>, 
                 _outgoing: Sender<RmbMsg>,
                 transports: Mutex<Vec<(std::ops::Range<u32>,&'static (dyn transport::Transport + 'static))>>,
-                subscribers: Mutex<HashMap<u32, fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> >>) -> Result<String, String> {
+                subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> >>>) -> Result<String, String> {
         thread::spawn(move|| {
             loop {
                 let msg = incoming.recv().unwrap(); // incoming msg from this thread
                 if msg.bus == CONTROLBUS {
                     let m = &(*msg.msg).as_any();
                     if let Some(msg) = m.downcast_ref::<SubscribeMsg>() {
-                        let subscribers = subscribers.lock().unwrap();
-                        let hm = &*subscribers;
-                        if hm.contains_key(&msg.b) {
-//                            hm[&msg.b][thread::current().id()] = msg;
-                        } else {
- //                           hm[&msg.b] = HashMap::new();
- //                           hm[&msg.b][thread::current().id()] = msg;
+                        let mut subscribers = subscribers.lock().unwrap();
+                        let hm = &mut*subscribers;
+                        if !hm.contains_key(&msg.b) {
+                            hm.insert(msg.b, HashMap::new());
+                        }
+                        if let Some(bm) = hm.get_mut(&msg.b) {
+                            bm.insert(thread::current().id(), msg.f);
                         }
                     }
                 } else {

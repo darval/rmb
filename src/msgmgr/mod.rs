@@ -2,9 +2,12 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::sync::{mpsc, Mutex};
 use std::thread;
 use std::fmt;
-use std::any::TypeId;
+use std::any::Any;
+use hashbrown::HashMap;
 use super::transport;
 use super::rmb;
+
+const CONTROLBUS: rmb::Bus = 0;
 
 #[derive(Clone)]
 pub struct RmbMsg {
@@ -12,15 +15,14 @@ pub struct RmbMsg {
     msg: Box<dyn rmb::Msg + 'static>,
 }
 
-const CONTROLBUS: rmb::Bus = 0;
 
 #[derive(Debug,Clone)]
 struct SubscribeMsg {
     b: rmb::Bus, 
-    f:  fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> 
+    f: fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> 
 }
 
-impl<'a> fmt::Display for SubscribeMsg {
+impl fmt::Display for SubscribeMsg {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Write strictly the first element into the supplied output
         // stream: `f`. Returns `fmt::Result` which indicates whether the
@@ -29,13 +31,13 @@ impl<'a> fmt::Display for SubscribeMsg {
         write!(f, "SubscribeMsg: {:?}", self.b)
     }
 }
-impl rmb::Msg for SubscribeMsg {}
 
 
 pub struct MsgMgr<'a> {
     inited: bool,
     transports: Mutex<Vec<(std::ops::Range<u32>,Box<dyn transport::Transport<'a> + 'a>)>>,
     que: Mutex<queue::Queue<RmbMsg>>,
+    subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> >>>,
     self_tx: Sender<RmbMsg>,
     _thread_tx: Sender<RmbMsg>,
     _self_rx: Receiver<RmbMsg>,
@@ -66,7 +68,8 @@ impl<'a> MsgMgr<'a> {
         let t = Mutex::new(transports);
         MsgMgr { 
             transports: t,
-            que: Mutex::new(queue::Queue::new()), 
+            que: Mutex::new(queue::Queue::new()),
+            subscribers: Mutex::new(HashMap::new()),
             inited: false,
             self_tx: st,
             _thread_rx: tr,
@@ -82,8 +85,11 @@ impl<'a> MsgMgr<'a> {
         if t.is_empty() {
             return Err("MsgMgr has no transports defined".to_string());
         }
-        for (channel_range,transport) in t.iter() {
-            transport.register(channel_range, MsgMgr::handle_msg).unwrap();
+        //
+        // TODO: Should this registration occur at init time for all buses, or
+        // only on demand when you have clients?
+        for (bus_range,transport) in t.iter() {
+            transport.register(bus_range, MsgMgr::handle_msg).unwrap();
         }
         self.inited = true;
         Ok("Success".to_string()) 
@@ -100,13 +106,22 @@ impl<'a> MsgMgr<'a> {
 ///     
     pub fn run(incoming: Receiver<RmbMsg>, 
                 _outgoing: Sender<RmbMsg>,
-                transports: Mutex<Vec<(std::ops::Range<u32>,&'static (dyn transport::Transport + 'static))>>) -> Result<String, String> {
+                transports: Mutex<Vec<(std::ops::Range<u32>,&'static (dyn transport::Transport + 'static))>>,
+                subscribers: Mutex<HashMap<u32, fn(rmb::Bus, Box<dyn rmb::Msg + 'static>)-> Result<String, String> >>) -> Result<String, String> {
         thread::spawn(move|| {
             loop {
                 let msg = incoming.recv().unwrap(); // incoming msg from this thread
                 if msg.bus == CONTROLBUS {
-                    if (*msg.msg).type_id() == TypeId::of::<SubscribeMsg>() {
-
+                    let m = &(*msg.msg).as_any();
+                    if let Some(msg) = m.downcast_ref::<SubscribeMsg>() {
+                        let subscribers = subscribers.lock().unwrap();
+                        let hm = &*subscribers;
+                        if hm.contains_key(&msg.b) {
+//                            hm[&msg.b][thread::current().id()] = msg;
+                        } else {
+ //                           hm[&msg.b] = HashMap::new();
+ //                           hm[&msg.b][thread::current().id()] = msg;
+                        }
                     }
                 } else {
                     let transports = transports.lock().unwrap();
@@ -156,7 +171,8 @@ impl<'a> MsgMgr<'a> {
 
     pub fn subscribe(&mut self, bus: rmb::Bus, f: fn(rmb::Bus, Box<dyn rmb::Msg + 'a>)-> Result<String, String>) -> Result<String, String> {
         if self.inited {
-            let sm = RmbMsg { bus: CONTROLBUS, msg: Box::new(SubscribeMsg { b: bus, f: f})};
+            let m = Box::new(SubscribeMsg { b: bus, f: f});
+            let sm = RmbMsg { bus: CONTROLBUS, msg: m};
             self.self_tx.send(sm).unwrap();
             Ok("Not Implemented".to_string())
         } else {

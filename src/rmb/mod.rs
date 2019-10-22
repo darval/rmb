@@ -4,8 +4,8 @@ use super::msgmgr;
 
 pub type Bus = u32;
 
-pub trait Msg: Send + Sync + Display + MsgClone + Any {
-
+pub trait Msg: Send + Sync + Display + MsgClone + Any + 'static {
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub trait MsgClone {
@@ -15,6 +15,12 @@ pub trait MsgClone {
 impl<T: 'static + Msg + Clone> MsgClone for T {
     fn clone_box(&self) -> Box<dyn Msg> {
         Box::new(self.clone())
+    }
+}
+
+impl<T: Send + Sync + Display + Clone + Any> Msg for T {
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

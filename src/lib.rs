@@ -42,7 +42,6 @@
 //!     struct MyMsg {
 //!         s: String,
 //!     }
-//!     impl rmb::Msg for MyMsg { }
 //!     impl fmt::Display for MyMsg {
 //!         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //!             write!(f, "{}", self.s)
@@ -81,9 +80,6 @@ mod tests {
     #[test]
     #[ignore]
     fn test_simple_subscribe_publish() {
-        impl rmb::Msg for String {
-
-        }
         // fn handler(_bus: rmb::Bus, msg: &dyn rmb::Msg)-> Result<String, String> {
         //     println!("{}", msg); 
         //     // assert_eq!(msg.to_string(), "Hello".to_string()); 

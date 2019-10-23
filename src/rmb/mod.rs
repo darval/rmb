@@ -66,6 +66,13 @@ impl<'a> Rmb<'a> {
             Err("Not Inited".to_string())
         }
     }
+    pub fn get_pending_count(&self, bus: Bus) -> usize {
+        if self.inited {
+            self.msgmgr.get_pending_count(bus)
+        } else {
+            0
+        }
+    }
 
 }
 

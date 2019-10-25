@@ -7,7 +7,7 @@ use msgbus::{
 };
 
 // Any type that implements cucumber::World + Default can be the world
-steps!(MyWorld => {
+steps!(MyWorld<'static> => {
         given regex "the following (.*) transports" |world, name, _step| {
             // Set up your context in given steps
             world.s = format!("{}", name[1]);

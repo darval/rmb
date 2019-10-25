@@ -18,7 +18,7 @@ pub struct RmbMsg {
 #[derive(Debug, Clone)]
 struct SubscribeMsg {
     b: rmb::Bus,
-    f: fn(rmb::Bus, Box<dyn rmb::Msg + 'static>) -> Result<String, String>,
+    f: fn(rmb::Bus) -> Result<String, String>,
 }
 
 impl fmt::Display for SubscribeMsg {
@@ -32,21 +32,27 @@ impl fmt::Display for SubscribeMsg {
 }
 
 struct Subscriber {
-    handler: fn(rmb::Bus),
+    handler: fn(rmb::Bus) -> Result<String, String>,
     incoming_msgs: queue::Queue<Arc<RmbMsg>>
 }
 
-pub struct MsgMgr<'a> {
-    inited: bool,
-    transports: Mutex<Vec<(std::ops::Range<u32>, Box<dyn transport::Transport<'a> + 'a>)>>,
-    subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, Subscriber>>>,
-    self_tx: Sender<RmbMsg>,
+pub struct MsgMgr {
+    pub transports: Mutex<
+            Vec<(
+                std::ops::Range<u32>,
+                &'static (dyn transport::Transport<'static> + 'static),
+            )>,
+        >,
+    pub subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, Subscriber>>>,
+    pub self_tx: Sender<RmbMsg>,
+    pub thread_rx: Receiver<RmbMsg>,
+
     _thread_tx: Sender<RmbMsg>,
     _self_rx: Receiver<RmbMsg>,
-    _thread_rx: Receiver<RmbMsg>,
+    inited: bool,
 }
 
-impl<'a> MsgMgr<'a> {
+impl<'a> MsgMgr {
     ///
     /// Returns a Message Manager object
     ///
@@ -66,10 +72,10 @@ impl<'a> MsgMgr<'a> {
     ///
     pub fn new(
         transports: Vec<(
-            std::ops::Range<rmb::Bus>,
-            Box<dyn transport::Transport<'a> + 'a>,
-        )>,
-    ) -> MsgMgr<'a> {
+                std::ops::Range<u32>,
+                &'static (dyn transport::Transport<'static> + 'static),
+            )>,
+    ) -> MsgMgr {
         let (st, tr): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
         let (tt, sr): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
         MsgMgr {
@@ -77,7 +83,7 @@ impl<'a> MsgMgr<'a> {
             subscribers: Mutex::new(HashMap::new()),
             inited: false,
             self_tx: st,
-            _thread_rx: tr,
+            thread_rx: tr,
             _thread_tx: tt,
             _self_rx: sr,
         }
@@ -118,15 +124,7 @@ impl<'a> MsgMgr<'a> {
                 &'static (dyn transport::Transport + 'static),
             )>,
         >,
-        subscribers: Mutex<
-            HashMap<
-                rmb::Bus,
-                HashMap<
-                    thread::ThreadId,
-                    fn(rmb::Bus, Box<dyn rmb::Msg + 'static>) -> Result<String, String>,
-                >,
-            >,
-        >,
+        subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, Subscriber>>>,
     ) -> Result<String, String> {
         thread::spawn(move || {
             loop {
@@ -140,7 +138,7 @@ impl<'a> MsgMgr<'a> {
                             hm.insert(msg.b, HashMap::new());
                         }
                         if let Some(bm) = hm.get_mut(&msg.b) {
-                            bm.insert(thread::current().id(), msg.f);
+                            bm.insert(thread::current().id(), Subscriber { handler: msg.f, incoming_msgs: queue::Queue::new() });
                         }
                     }
                 } else {
@@ -196,7 +194,7 @@ impl<'a> MsgMgr<'a> {
     pub fn subscribe(
         &mut self,
         bus: rmb::Bus,
-        f: fn(rmb::Bus, Box<dyn rmb::Msg + 'a>) -> Result<String, String>,
+        f: fn(rmb::Bus) -> Result<String, String>,
     ) -> Result<String, String> {
         if self.inited {
             let m = Box::new(SubscribeMsg { b: bus, f: f });
@@ -255,8 +253,8 @@ mod tests {
 
     #[test]
     fn test_init_success() {
-        let t = Box::new(local::TransportLocal::new());
-        let mut mm = msgmgr::MsgMgr::new(vec![(0..10, t)]);
+        let t = local::TransportLocal::new();
+        let mut mm = msgmgr::MsgMgr::new(vec![(0..10, &t)]);
         mm.init().unwrap();
     }
     #[test]
@@ -267,9 +265,9 @@ mod tests {
     }
     #[test]
     fn get_transport_names() {
-        let it = Box::new(internal::TransportInternal::new());
-        let lt = Box::new(local::TransportLocal::new());
-        let mut mm = msgmgr::MsgMgr::new(vec![(0..10, it), (11..20, lt)]);
+        let it = internal::TransportInternal::new();
+        let lt = local::TransportLocal::new();
+        let mut mm = msgmgr::MsgMgr::new(vec![(0..10, &it), (11..20, &lt)]);
         mm.init().unwrap();
         let names = mm.get_transport_names().unwrap();
         assert_eq!(names.len(), 2);

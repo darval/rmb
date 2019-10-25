@@ -1,18 +1,21 @@
 use cucumber::{after, before, cucumber};
-
+use msgbus::{rmb,msgmgr,transport::internal};
 pub mod feature_getting_started_steps;
+pub mod feature_publishing_steps;
 
-pub struct MyWorld {
+pub struct MyWorld<'a> {
     // You can use this struct for mutable context in scenarios.
     s: String,
+    b: rmb::Rmb<'a>,
 }
 
-impl<'a> cucumber::World for MyWorld {}
-impl<'a> std::default::Default for MyWorld {
-    fn default() -> MyWorld {
+impl<'a> cucumber::World for MyWorld<'a> {}
+impl<'a> std::default::Default for MyWorld<'a> {
+    fn default() -> MyWorld<'a> {
         // This function is called every time a new scenario is started
         MyWorld {
             s: "a default string".to_string(),
+            b: rmb::Rmb::new(msgmgr::MsgMgr::new(vec!((0..10, Box::new(internal::TransportInternal::new()))))),
         }
     }
 }
@@ -34,7 +37,8 @@ cucumber! {
     features: "./tests/features", // Path to our feature files
     world: ::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
-        feature_getting_started_steps::steps // the `steps!` macro creates a `steps` function in a module
+        feature_getting_started_steps::steps, // the `steps!` macro creates a `steps` function in a module
+        feature_publishing_steps::steps,
     ],
     setup: setup, // Optional; called once before everything
     before: &[

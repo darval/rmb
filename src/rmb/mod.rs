@@ -30,19 +30,25 @@ impl<'a> Clone for Box<dyn Msg + 'a> {
     }
 }
 
-pub struct Rmb<'a> {
-    msgmgr: msgmgr::MsgMgr<'a>,
+pub struct Rmb {
+    msgmgr: msgmgr::MsgMgr,
     inited: bool,
 }
 
-impl<'a> Rmb<'a> {
+impl<'a> Rmb {
     pub fn new(msgmgr: msgmgr::MsgMgr) -> Rmb {  Rmb { msgmgr, inited: false }    }
     pub fn init(&mut self) -> Result<String, String> {
         self.msgmgr.init().unwrap();
         self.inited = true;
         Ok("Success".to_string()) 
     }
-
+    pub fn run(&self) -> Result<String, String> {
+        if self.inited {
+            msgmgr::MsgMgr::run(self.msgmgr.thread_rx, self.msgmgr.self_tx, self.msgmgr.transports, self.msgmgr.subscribers )
+        } else {
+           Err("Not Inited".to_string())
+        }
+    }
     pub fn get_transport_names(&self) -> Result<Vec<String>, String> {
         if self.inited {
             Ok(self.msgmgr.get_transport_names().unwrap())
@@ -59,7 +65,7 @@ impl<'a> Rmb<'a> {
         }
     }
 
-    pub fn subscribe(&mut self, bus: Bus, f: fn(Bus, Box<dyn Msg + 'a>)-> Result<String, String>) -> Result<String, String> {
+    pub fn subscribe(&mut self, bus: Bus, f: fn(Bus)-> Result<String, String>) -> Result<String, String> {
         if self.inited {
             self.msgmgr.subscribe(bus, f)
         } else {
@@ -86,8 +92,8 @@ mod tests {
     #[test]
     #[ignore]
     fn test_subscribe_registered() {
-        let t = Box::new(local::TransportLocal::new());
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
+        let t = local::TransportLocal::new();
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
         let mut r = Rmb::new(mm);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
@@ -96,8 +102,8 @@ mod tests {
    #[ignore]
    #[should_panic(expected = "Not Registered")]
     fn test_subscribe_unregistered() {
-        let t = Box::new(local::TransportLocal::new());
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,t)]);
+        let t = local::TransportLocal::new();
+        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
         let mut r = Rmb::new(mm);
         r.init().unwrap();
         r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();

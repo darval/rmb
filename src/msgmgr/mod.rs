@@ -3,22 +3,22 @@ use super::transport;
 use hashbrown::HashMap;
 use std::fmt;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{mpsc, Mutex};
 use std::sync::Arc;
+use std::sync::{mpsc, Mutex};
 use std::thread;
 
-const CONTROLBUS: rmb::Bus = 0;
+pub const CONTROLBUS: rmb::Bus = 0;
 
 #[derive(Clone)]
 pub struct RmbMsg {
-    bus: rmb::Bus,
-    msg: Box<dyn rmb::Msg + 'static>,
+    pub bus: rmb::Bus,
+    pub msg: Box<dyn rmb::Msg + 'static>,
 }
 
 #[derive(Debug, Clone)]
-struct SubscribeMsg {
-    b: rmb::Bus,
-    f: fn(rmb::Bus) -> Result<String, String>,
+pub struct SubscribeMsg {
+    pub b: rmb::Bus,
+    pub f: fn(rmb::Bus) -> Result<String, String>,
 }
 
 impl fmt::Display for SubscribeMsg {
@@ -31,24 +31,19 @@ impl fmt::Display for SubscribeMsg {
     }
 }
 
-struct Subscriber {
+pub struct Subscriber {
     handler: fn(rmb::Bus) -> Result<String, String>,
-    incoming_msgs: queue::Queue<Arc<RmbMsg>>
+    incoming_msgs: queue::Queue<Arc<RmbMsg>>,
 }
 
 pub struct MsgMgr {
     pub transports: Mutex<
-            Vec<(
-                std::ops::Range<u32>,
-                &'static (dyn transport::Transport<'static> + 'static),
-            )>,
-        >,
+        Vec<(
+            std::ops::Range<u32>,
+            &'static (dyn transport::Transport<'static> + 'static),
+        )>,
+    >,
     pub subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, Subscriber>>>,
-    pub self_tx: Sender<RmbMsg>,
-    pub thread_rx: Receiver<RmbMsg>,
-
-    _thread_tx: Sender<RmbMsg>,
-    _self_rx: Receiver<RmbMsg>,
     inited: bool,
 }
 
@@ -72,20 +67,14 @@ impl<'a> MsgMgr {
     ///
     pub fn new(
         transports: Vec<(
-                std::ops::Range<u32>,
-                &'static (dyn transport::Transport<'static> + 'static),
-            )>,
+            std::ops::Range<u32>,
+            &'static (dyn transport::Transport<'static> + 'static),
+        )>,
     ) -> MsgMgr {
-        let (st, tr): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
-        let (tt, sr): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
         MsgMgr {
             transports: Mutex::new(transports),
             subscribers: Mutex::new(HashMap::new()),
             inited: false,
-            self_tx: st,
-            thread_rx: tr,
-            _thread_tx: tt,
-            _self_rx: sr,
         }
     }
     ///
@@ -116,19 +105,26 @@ impl<'a> MsgMgr {
     /// This method is called by the overarching Message Bus when it is ready to run
     ///     
     pub fn run(
-        incoming: Receiver<RmbMsg>,
-        _outgoing: Sender<RmbMsg>,
-        transports: Mutex<
+        transports: &'static Mutex<
             Vec<(
                 std::ops::Range<u32>,
-                &'static (dyn transport::Transport + 'static),
+                &'static (dyn transport::Transport<'static> + 'static),
             )>,
         >,
-        subscribers: Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, Subscriber>>>,
-    ) -> Result<String, String> {
+        subscribers: &'static Mutex<HashMap<rmb::Bus, HashMap<thread::ThreadId, Subscriber>>>,
+    ) -> Result<Sender<RmbMsg>, String> {
+        let (outgoing, _incoming): (Sender<RmbMsg>, Receiver<RmbMsg>) = mpsc::channel();
+
         thread::spawn(move || {
             loop {
-                let msg = incoming.recv().unwrap(); // incoming msg from this thread
+                //                let msg = tr.recv().unwrap(); // incoming msg from this thread
+                let msg = RmbMsg {
+                    bus: 0,
+                    msg: Box::new(SubscribeMsg {
+                        b: 0,
+                        f: |_| Ok("".to_string()),
+                    }),
+                };
                 if msg.bus == CONTROLBUS {
                     let m = &(*msg.msg).as_any();
                     if let Some(msg) = m.downcast_ref::<SubscribeMsg>() {
@@ -138,7 +134,13 @@ impl<'a> MsgMgr {
                             hm.insert(msg.b, HashMap::new());
                         }
                         if let Some(bm) = hm.get_mut(&msg.b) {
-                            bm.insert(thread::current().id(), Subscriber { handler: msg.f, incoming_msgs: queue::Queue::new() });
+                            bm.insert(
+                                thread::current().id(),
+                                Subscriber {
+                                    handler: msg.f,
+                                    incoming_msgs: queue::Queue::new(),
+                                },
+                            );
                         }
                     }
                 } else {
@@ -154,7 +156,7 @@ impl<'a> MsgMgr {
                 }
             }
         });
-        Ok("Success".to_string())
+        Ok(outgoing)
     }
     ///
     /// Get the names of transports registered with the message manager
@@ -174,40 +176,40 @@ impl<'a> MsgMgr {
         }
         Ok(v)
     }
-    pub fn publish(
-        &mut self,
-        bus: rmb::Bus,
-        msg: Box<dyn rmb::Msg + 'a>,
-    ) -> Result<String, String> {
-        if self.is_inited() {
-            if bus == CONTROLBUS {
-                return Err("Bus 0 (ControlBus) is for internal use only".to_string());
-            }
-            let msg = RmbMsg { bus, msg };
-            self.self_tx.send(msg).unwrap();
-            Ok("Success".to_string())
-        } else {
-            Err("Not Inited".to_string())
-        }
-    }
+    // pub fn publish(
+    //     &mut self,
+    //     bus: rmb::Bus,
+    //     msg: Box<dyn rmb::Msg + 'a>,
+    // ) -> Result<String, String> {
+    //     if self.is_inited() {
+    //         if bus == CONTROLBUS {
+    //             return Err("Bus 0 (ControlBus) is for internal use only".to_string());
+    //         }
+    //         let msg = RmbMsg { bus, msg };
+    //         self.self_tx.send(msg).unwrap();
+    //         Ok("Success".to_string())
+    //     } else {
+    //         Err("Not Inited".to_string())
+    //     }
+    // }
 
-    pub fn subscribe(
-        &mut self,
-        bus: rmb::Bus,
-        f: fn(rmb::Bus) -> Result<String, String>,
-    ) -> Result<String, String> {
-        if self.inited {
-            let m = Box::new(SubscribeMsg { b: bus, f: f });
-            let sm = RmbMsg {
-                bus: CONTROLBUS,
-                msg: m,
-            };
-            self.self_tx.send(sm).unwrap();
-            Ok("Not Implemented".to_string())
-        } else {
-            Err("Not Inited".to_string())
-        }
-    }
+    // pub fn subscribe(
+    //     &mut self,
+    //     bus: rmb::Bus,
+    //     f: fn(rmb::Bus) -> Result<String, String>,
+    // ) -> Result<String, String> {
+    //     if self.inited {
+    //         let m = Box::new(SubscribeMsg { b: bus, f: f });
+    //         let sm = RmbMsg {
+    //             bus: CONTROLBUS,
+    //             msg: m,
+    //         };
+    //         self.self_tx.send(sm).unwrap();
+    //         Ok("Not Implemented".to_string())
+    //     } else {
+    //         Err("Not Inited".to_string())
+    //     }
+    // }
 
     fn handle_msg(&mut self, bus: rmb::Bus, msg: Box<dyn rmb::Msg + 'a>) -> Result<String, String> {
         let mut s = self.subscribers.lock().unwrap();
@@ -217,12 +219,11 @@ impl<'a> MsgMgr {
             if let Some(bm) = hm.get_mut(&bus) {
                 bm.iter_mut().for_each(|s| {
                     // notify the clients that there is a message for them
-                    (s.1.handler)(bus);
+                    (s.1.handler)(bus).unwrap();
                     // Enqueue a reference to the message
                     s.1.incoming_msgs.queue(Arc::clone(&msg)).unwrap();
                     ()
                 });
-               
             }
         }
 
@@ -249,29 +250,11 @@ impl<'a> MsgMgr {
 #[cfg(test)]
 mod tests {
     use crate::msgmgr;
-    use crate::transport::{internal, local};
 
-    #[test]
-    fn test_init_success() {
-        let t = local::TransportLocal::new();
-        let mut mm = msgmgr::MsgMgr::new(vec![(0..10, &t)]);
-        mm.init().unwrap();
-    }
     #[test]
     fn test_init_no_transport() {
         let mut t = msgmgr::MsgMgr::new(vec![]);
         let e = t.init();
         assert_eq!(e, Err("MsgMgr has no transports defined".to_string()));
-    }
-    #[test]
-    fn get_transport_names() {
-        let it = internal::TransportInternal::new();
-        let lt = local::TransportLocal::new();
-        let mut mm = msgmgr::MsgMgr::new(vec![(0..10, &it), (11..20, &lt)]);
-        mm.init().unwrap();
-        let names = mm.get_transport_names().unwrap();
-        assert_eq!(names.len(), 2);
-        assert_eq!(names[0], "internal".to_string());
-        assert_eq!(names[1], "local".to_string());
     }
 }

@@ -67,32 +67,3 @@ pub mod rmb;
 pub mod msgmgr;
 pub mod transport;
 
-#[cfg(test)]
-mod tests {
-    use super::{rmb, msgmgr, transport::local};
-    #[test]
-    fn test_init() {
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = rmb::Rmb::new(mm);
-        r.init().unwrap();
-    }
-    #[test]
-    #[ignore]
-    fn test_simple_subscribe_publish() {
-        // fn handler(_bus: rmb::Bus, msg: &dyn rmb::Msg)-> Result<String, String> {
-        //     println!("{}", msg); 
-        //     // assert_eq!(msg.to_string(), "Hello".to_string()); 
-            // Ok(msg.to_string())
-        // }
-
-        let hello = "Hello".to_string();
-        let bus = 1;
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = rmb::Rmb::new(mm);
-        r.init().unwrap();
-        // r.subscribe(bus, handler).unwrap();
-        r.publish(bus, Box::new(hello)).unwrap();
-    }
-}

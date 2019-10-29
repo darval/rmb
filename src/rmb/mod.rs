@@ -1,5 +1,7 @@
 use std::fmt::Display;
 use std::any::Any;
+use std::sync::mpsc;
+
 use super::msgmgr;
 
 pub type Bus = u32;
@@ -32,19 +34,28 @@ impl<'a> Clone for Box<dyn Msg + 'a> {
 
 pub struct Rmb {
     msgmgr: msgmgr::MsgMgr,
+    outgoing: mpsc::Sender<msgmgr::RmbMsg>,
     inited: bool,
 }
 
 impl<'a> Rmb {
-    pub fn new(msgmgr: msgmgr::MsgMgr) -> Rmb {  Rmb { msgmgr, inited: false }    }
+    pub fn new(msgmgr: msgmgr::MsgMgr) -> Rmb {  
+        let (s,_) = mpsc::channel();
+        Rmb { msgmgr, outgoing: s, inited: false }
+    }
     pub fn init(&mut self) -> Result<String, String> {
         self.msgmgr.init().unwrap();
         self.inited = true;
         Ok("Success".to_string()) 
     }
-    pub fn run(&self) -> Result<String, String> {
+    pub fn run(&'static mut self) -> Result<String, String> {
         if self.inited {
-            msgmgr::MsgMgr::run(self.msgmgr.thread_rx, self.msgmgr.self_tx, self.msgmgr.transports, self.msgmgr.subscribers )
+            if let Ok(outgoing) = msgmgr::MsgMgr::run(&self.msgmgr.transports, &self.msgmgr.subscribers) {
+                self.outgoing = outgoing;
+                Ok("Success".to_string())
+            } else {
+                Err("Failed to run".to_string())
+            }
         } else {
            Err("Not Inited".to_string())
         }
@@ -59,7 +70,12 @@ impl<'a> Rmb {
 
     pub fn publish(&mut self, bus: Bus, msg: Box<dyn Msg + 'a>) -> Result<String, String> {
         if self.inited {
-            self.msgmgr.publish(bus, msg)
+            if bus == msgmgr::CONTROLBUS {
+                return Err("Bus 0 (ControlBus) is for internal use only".to_string());
+            }
+            let msg = msgmgr::RmbMsg { bus, msg };
+            self.outgoing.send(msg).unwrap();
+            Ok("Success".to_string())
         } else {
             Err("Not Inited".to_string())
         }
@@ -67,7 +83,13 @@ impl<'a> Rmb {
 
     pub fn subscribe(&mut self, bus: Bus, f: fn(Bus)-> Result<String, String>) -> Result<String, String> {
         if self.inited {
-            self.msgmgr.subscribe(bus, f)
+            let m = Box::new(msgmgr::SubscribeMsg { b: bus, f: f });
+            let sm = msgmgr::RmbMsg {
+                bus: msgmgr::CONTROLBUS,
+                msg: m,
+            };
+            self.outgoing.send(sm).unwrap();
+            Ok("Success".to_string())
         } else {
             Err("Not Inited".to_string())
         }
@@ -84,28 +106,4 @@ impl<'a> Rmb {
 
 #[cfg(test)]
 mod tests {
-    use crate::transport::*;
-    use crate::rmb::*;
-    //
-    // Test to see that we are registered before we call the transport subscribe
-    //
-    #[test]
-    #[ignore]
-    fn test_subscribe_registered() {
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = Rmb::new(mm);
-        r.init().unwrap();
-        r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
-    }
-   #[test]
-   #[ignore]
-   #[should_panic(expected = "Not Registered")]
-    fn test_subscribe_unregistered() {
-        let t = local::TransportLocal::new();
-        let mm = msgmgr::MsgMgr::new(vec![(0..10,&t)]);
-        let mut r = Rmb::new(mm);
-        r.init().unwrap();
-        r.subscribe(1,|_, _|{Ok("".to_string())}).unwrap();
-    }
 }

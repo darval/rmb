@@ -18,7 +18,7 @@ impl fmt::Display for MyMsg {
 }
 
 // Any type that implements cucumber::World + Default can be the world
-steps!(MyWorld<'static> => {
+steps!(MyWorld => {
         given regex r"^an already inited (.*) bus$" |world, name, _step| {
            let mut t: Box<dyn Transport + 'static> = match name[1].as_str() {
                 "internal" => Box::new(internal::TransportInternal::new()),
@@ -29,12 +29,12 @@ steps!(MyWorld<'static> => {
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            let mut mm = msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            let mut mm = msgmgr::MsgMgr::new(vec![(0..10, &*t)]);
             mm.init().unwrap();
             assert_eq!(mm.is_inited(), true);
             world.b = rmb::Rmb::new(mm);
             world.b.init().unwrap();
-            msgmgr::MsgMgr::run().unwrap();
+            world.b.run().unwrap();
         };
 
         when regex r"I publish (\d+) message\(s\)" (usize) | world, number, _step | {

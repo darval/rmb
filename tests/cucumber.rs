@@ -3,19 +3,19 @@ use msgbus::{rmb,msgmgr,transport::internal};
 pub mod feature_getting_started_steps;
 pub mod feature_publishing_steps;
 
-pub struct MyWorld<'a> {
+pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     s: String,
-    b: rmb::Rmb<'a>,
+    b: rmb::Rmb,
 }
 
-impl<'a> cucumber::World for MyWorld<'a> {}
-impl<'a> std::default::Default for MyWorld<'a> {
-    fn default() -> MyWorld<'a> {
+impl<'a> cucumber::World for MyWorld {}
+impl<'a> std::default::Default for MyWorld {
+    fn default() -> MyWorld {
         // This function is called every time a new scenario is started
         MyWorld {
             s: "a default string".to_string(),
-            b: rmb::Rmb::new(msgmgr::MsgMgr::new(vec!((0..10, Box::new(internal::TransportInternal::new()))))),
+            b: rmb::Rmb::new(msgmgr::MsgMgr::new(vec!((0..10, &internal::TransportInternal::new())))),
         }
     }
 }

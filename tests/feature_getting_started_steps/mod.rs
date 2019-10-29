@@ -7,7 +7,7 @@ use msgbus::{
 };
 
 // Any type that implements cucumber::World + Default can be the world
-steps!(MyWorld<'static> => {
+steps!(MyWorld => {
         given regex "the following (.*) transports" |world, name, _step| {
             // Set up your context in given steps
             world.s = format!("{}", name[1]);
@@ -54,7 +54,7 @@ steps!(MyWorld<'static> => {
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, &*t)]);
             mm.init().unwrap();
             assert_eq!(mm.is_inited(), true);
         };
@@ -69,7 +69,7 @@ steps!(MyWorld<'static> => {
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, &*t)]);
             mm.init().unwrap();
             assert_eq!(mm.is_inited(), true);
         };
@@ -84,7 +84,7 @@ steps!(MyWorld<'static> => {
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, &*t)]);
             mm.init().unwrap();
             assert_eq!(mm.is_inited(), true);
             let mut r = rmb::Rmb::new(mm);
@@ -102,7 +102,7 @@ steps!(MyWorld<'static> => {
             t.init().unwrap();
             assert_eq!(t.name(), name[1]);
             assert_eq!(t.is_inited(), true);
-            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, t)]);
+            let mut mm = msgbus::msgmgr::MsgMgr::new(vec![(0..10, &*t)]);
             mm.init().unwrap();
             assert_eq!(mm.is_inited(), true);
             let mut r = rmb::Rmb::new(mm);

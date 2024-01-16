@@ -6,7 +6,7 @@ pub mod feature_publishing_steps;
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     s: String,
-    b: rmb::Rmb,
+    b: Box<rmb::Rmb>,
 }
 
 impl<'a> cucumber::World for MyWorld {}
@@ -15,7 +15,7 @@ impl<'a> std::default::Default for MyWorld {
         // This function is called every time a new scenario is started
         MyWorld {
             s: "a default string".to_string(),
-            b: rmb::Rmb::new(msgmgr::MsgMgr::new(vec!((0..10, &internal::TransportInternal::new())))),
+            b: Box::new(rmb::Rmb::new(msgmgr::MsgMgr::new(vec!((0..10, &internal::TransportInternal::new()))))),
         }
     }
 }

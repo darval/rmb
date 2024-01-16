@@ -32,7 +32,7 @@ steps!(MyWorld => {
             let mut mm = msgmgr::MsgMgr::new(vec![(0..10, &*t)]);
             mm.init().unwrap();
             assert_eq!(mm.is_inited(), true);
-            world.b = rmb::Rmb::new(mm);
+            world.b = Box::new(rmb::Rmb::new(mm));
             world.b.init().unwrap();
             world.b.run().unwrap();
         };
